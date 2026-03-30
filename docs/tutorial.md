@@ -116,7 +116,7 @@ pip install heterosense-fl
 **Development install:**
 
 ```bash
-git clone https://github.com/ss-lab-tut/heterosense-fl
+git clone https://github.com/ss-lab-tut/heterosense-fl-testbed
 cd heterosense-fl
 pip install -e ".[dev]"
 pytest tests/ -v
@@ -483,4 +483,4 @@ fl.simulation.start_simulation(
 
 ---
 
-*HeteroSense-FL v1.0.0 · MIT License · https://github.com/ss-lab-tut/heterosense-fl*
+*HeteroSense-FL v1.0.0 · MIT License · https://github.com/ss-lab-tut/heterosense-fl-testbed*

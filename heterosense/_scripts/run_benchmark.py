@@ -1,7 +1,7 @@
 """
 HeteroSense-FL reference benchmark — entry point: heterosense-benchmark
 
-Reproduces Table 3 from the SoftwareX paper.
+Reproduces Table 3 from the paper (doi: 10.5281/zenodo.19326703).
 Seeds {42, 123, 7}; n_steps=3000; 3 FL rounds; TinyMLP encoder.
 """
 import numpy as np

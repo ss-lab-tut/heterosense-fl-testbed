@@ -1,7 +1,7 @@
 """
 Fig. 3 — HeteroSense-FL reference benchmark.
 
-Reproduces the benchmark chart for Table 3 in the SoftwareX paper.
+Reproduces the benchmark chart for Table 3 in the paper.
 All numbers are computed from heterosense-benchmark (seeds {42,123,7};
 n_steps=3000; 3 FL rounds; TinyMLP encoder).
 

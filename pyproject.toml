@@ -40,10 +40,10 @@ dev = ["pytest>=7.4", "pytest-cov>=4.0"]
 docs = ["sphinx>=7.0", "sphinx-rtd-theme>=2.0"]
 
 [project.urls]
-Homepage     = "https://github.com/ss-lab-tut/heterosense-fl"
-Repository   = "https://github.com/ss-lab-tut/heterosense-fl"
-Issues       = "https://github.com/ss-lab-tut/heterosense-fl/issues"
-Paper        = "https://www.sciencedirect.com/journal/softwarex"
+Homepage     = "https://github.com/ss-lab-tut/heterosense-fl-testbed"
+Repository   = "https://github.com/ss-lab-tut/heterosense-fl-testbed"
+Issues       = "https://github.com/ss-lab-tut/heterosense-fl-testbed/issues"
+Archive      = "https://doi.org/10.5281/zenodo.19326703"
 
 [project.scripts]
 heterosense-demo      = "heterosense._scripts.quick_demo:main"

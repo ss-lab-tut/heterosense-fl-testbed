@@ -38,7 +38,7 @@ Reproduce benchmarks
 
 .. code-block:: bash
 
-   heterosense-benchmark   # reproduces Table 3 in the SoftwareX paper
+   heterosense-benchmark   # reproduces Table 3 in the paper
 
 Full design tutorial
 ====================

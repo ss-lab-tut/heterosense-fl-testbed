@@ -4,8 +4,8 @@ title: "HeteroSense-FL: A Multimodal Simulation Testbed for Modality-Heterogeneo
 version: "1.0.0"
 date-released: "2026-01-01"
 license: MIT
-repository-code: "https://github.com/ss-lab-tut/heterosense-fl"
-# doi will be added upon journal acceptance
+repository-code: "https://github.com/ss-lab-tut/heterosense-fl-testbed"
+doi: "10.5281/zenodo.19326703"
 authors:
   - family-names: Shao
     given-names: Xun

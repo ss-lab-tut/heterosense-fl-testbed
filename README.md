@@ -1,6 +1,6 @@
 # HeteroSense-FL
 
-[![Tests](https://github.com/ss-lab-tut/heterosense-fl/actions/workflows/tests.yml/badge.svg)](https://github.com/ss-lab-tut/heterosense-fl/actions)
+[![Tests](https://github.com/ss-lab-tut/heterosense-fl-testbed/actions/workflows/tests.yml/badge.svg)](https://github.com/ss-lab-tut/heterosense-fl-testbed/actions)
 [![Documentation Status](https://readthedocs.org/projects/heterosense-fl/badge/?version=latest)](https://heterosense-fl.readthedocs.io)
 [![PyPI](https://img.shields.io/pypi/v/heterosense-fl)](https://pypi.org/project/heterosense-fl/)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
@@ -120,17 +120,16 @@ Design tutorial: [docs/tutorial.md](docs/tutorial.md)
 ## Citation
 
 ```bibtex
-@article{shao2026heterosensefl,
-  title   = {{HeteroSense-FL}: A Multimodal Simulation Testbed for
-             Modality-Heterogeneous Federated Learning},
+@software{shao2026heterosensefl,
+  title   = {{HeteroSense-FL: A Multimodal Simulation Testbed for
+             Modality-Heterogeneous Federated Learning}},
   author  = {Shao, Xun and Yamakawa, Kohsuke and Otani, Aoba},
-  journal = {SoftwareX},
   year    = {2026},
-  # doi will be added upon journal acceptance
+  doi     = {10.5281/zenodo.19326703},
+  url     = {https://zenodo.org/records/19326703},
 }
 ```
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-# heterosense-fl-testbed
