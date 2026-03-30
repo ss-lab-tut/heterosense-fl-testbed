@@ -1,0 +1,136 @@
+# HeteroSense-FL
+
+[![Tests](https://github.com/ss-lab-tut/heterosense-fl/actions/workflows/tests.yml/badge.svg)](https://github.com/ss-lab-tut/heterosense-fl/actions)
+[![Documentation Status](https://readthedocs.org/projects/heterosense-fl/badge/?version=latest)](https://heterosense-fl.readthedocs.io)
+[![PyPI](https://img.shields.io/pypi/v/heterosense-fl)](https://pypi.org/project/heterosense-fl/)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+A multimodal simulation testbed for modality-heterogeneous federated learning research.
+
+**Who is it for?**  
+Researchers who need reproducible, controllable data for developing and comparing FL algorithms
+under *modality heterogeneity* — the condition where different client sites have structurally
+incompatible sensor subsets.
+
+**How does it complement Flower and FedML?**  
+Flower and FedML orchestrate algorithm execution; they do not generate sensor data.
+HeteroSense-FL is the missing data layer: it simulates N indoor sensing sites, each with a
+configurable LiDAR / bed-pressure-mat subset, and produces structured 3D point clouds and
+16×16 pressure maps for FL research under realistic modality heterogeneity.
+
+**Reusable software assets:**
+- `ClientFactory` — configure any N-client modality heterogeneity pattern in one line
+- `DatasetBuilder` — deterministic, seeded dataset generation  
+- `TemporalWindowSampler` — plug-and-replace interface for temporal encoders
+- `run_validation` — automated observation integrity checks (V1–V4)
+- `heterosense-benchmark` — one-command Table 3 reproduction (~3 min)
+
+
+## Installation
+
+```bash
+pip install heterosense-fl
+```
+
+## Quick start
+
+```python
+from heterosense import ClientFactory, ConfigurationManager as CM
+from heterosense import DatasetBuilder, TemporalWindowSampler
+
+# 10-client heterogeneous dataset
+clients = ClientFactory.make(10, strategy="round_robin")
+data    = DatasetBuilder(CM.from_clients(clients, n_steps=20_000).to_sim_config()).build()
+
+# Temporal window iteration
+sampler = TemporalWindowSampler(data["0"], window=3)
+for window in sampler:
+    z     = TemporalWindowSampler.lidar_z_series(window)   # (3,)
+    p     = TemporalWindowSampler.pressure_series(window)  # (3,)
+    label = TemporalWindowSampler.center_label(window, sampler.center_idx())
+    # replace the two helpers above with your own temporal encoder
+```
+
+## Reproducing Table 3 (reference benchmarks)
+
+```bash
+heterosense-benchmark
+```
+
+Single command. Seeds {42, 123, 7} fixed. Results serve as a baseline for
+algorithm comparison and are not a claim of best-in-class performance.
+
+## Key components
+
+| Class / function | Description |
+|-----------------|-------------|
+| `ClientFactory.make(N, strategy)` | N-client modality configuration |
+| `ConfigurationManager.from_clients()` | Builds `SimConfig` without manual YAML |
+| `DatasetBuilder(sc).build()` | Generates `{client_id: [ModalityBundle]}` |
+| `TemporalWindowSampler(bundles, window)` | Sliding-window encoder interface |
+| `run_validation(data, modalities)` | Automated integrity checks V1–V4 |
+
+## Modality patterns
+
+| `patterns=` | LiDAR | Pressure mat |
+|-------------|-------|--------------|
+| `"both"` | ✓ | ✓ |
+| `"lidar"` | ✓ | — |
+| `"bed"` | — | ✓ |
+
+## Reference benchmarks (Table 3)
+
+Reproduced from `heterosense-benchmark` (seeds {42, 123, 7}; n_steps=3000; 3 FL rounds; TinyMLP):
+
+| N | Pattern | Local std. | FedAvg std. | Local bal. | FedAvg bal. | Δ std |
+|---|---------|------------|-------------|------------|-------------|-------|
+| 3 | homogeneous | 0.366±0.009 | 0.419±0.023 | 0.252±0.004 | 0.298±0.017 | -0.053 |
+| 3 | round-robin | 0.379±0.021 | 0.383±0.009 | 0.285±0.011 | 0.283±0.007 | -0.004 |
+| 10 | round-robin | 0.361±0.006 | 0.368±0.017 | 0.280±0.003 | 0.287±0.014 | -0.008 |
+| 20 | round-robin | 0.362±0.005 | 0.368±0.006 | 0.282±0.004 | 0.299±0.012 | -0.007 |
+| 50 | round-robin | 0.366±0.003 | 0.381±0.017 | 0.277±0.003 | 0.300±0.015 | -0.015 |
+
+std. = standard accuracy; bal. = balanced accuracy (corrects for ABSENT-class dominance).  
+FedAvg outperforms Local under balanced accuracy in most conditions.
+
+
+## Interactive notebook
+
+An annotated quickstart notebook is available in `examples/quickstart.ipynb`:
+
+```bash
+pip install jupyter
+jupyter notebook examples/quickstart.ipynb
+```
+
+## Running tests
+
+```bash
+pip install -e ".[dev]"
+pytest tests/ -v
+```
+
+## Documentation
+
+Full documentation: https://heterosense-fl.readthedocs.io
+
+Design tutorial: [docs/tutorial.md](docs/tutorial.md)
+
+## Citation
+
+```bibtex
+@article{shao2026heterosensefl,
+  title   = {{HeteroSense-FL}: A Multimodal Simulation Testbed for
+             Modality-Heterogeneous Federated Learning},
+  author  = {Shao, Xun and Yamakawa, Kohsuke and Otani, Aoba},
+  journal = {SoftwareX},
+  year    = {2026},
+  # doi will be added upon journal acceptance
+}
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+# heterosense-fl-testbed

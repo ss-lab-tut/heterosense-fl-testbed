@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use HeteroSense-FL in your research, please cite as below."
+title: "HeteroSense-FL: A Multimodal Simulation Testbed for Modality-Heterogeneous Federated Learning"
+version: "1.0.0"
+date-released: "2026-01-01"
+license: MIT
+repository-code: "https://github.com/ss-lab-tut/heterosense-fl"
+# doi will be added upon journal acceptance
+authors:
+  - family-names: Shao
+    given-names: Xun
+    email: x-shao@ieee.org
+    affiliation: "Toyohashi University of Technology"
+  - family-names: Yamakawa
+    given-names: Kohsuke
+    affiliation: "Toyohashi University of Technology"
+  - family-names: Otani
+    given-names: Aoba
+    affiliation: "Toyohashi University of Technology"
+keywords:
+  - federated learning
+  - modality heterogeneity
+  - simulation testbed
+  - point cloud
+  - pressure map
+  - temporal window
+  - activity recognition

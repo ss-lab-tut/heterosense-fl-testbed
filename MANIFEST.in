@@ -1,0 +1,10 @@
+include README.md
+include LICENSE
+include CITATION.cff
+include CHANGELOG.md
+include requirements.txt
+recursive-include heterosense *.py
+recursive-include docs *
+include docs/tutorial.md
+recursive-include examples *.py *.ipynb
+recursive-include tests *.py
