@@ -25,3 +25,4 @@ venv/
 .vscode/
 .idea/
 *.swp
+.DS_Store
