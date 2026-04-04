@@ -29,8 +29,23 @@ configurable LiDAR / bed-pressure-mat subset, and produces structured 3D point c
 
 ## Installation
 
+**From PyPI (recommended for users):**
+
 ```bash
-pip install heterosense-fl
+pip install heterosense-fl   # Python 3.9+
+```
+
+**From source (recommended for reviewers and developers):**
+
+```bash
+git clone https://github.com/ss-lab-tut/heterosense-fl-testbed
+cd heterosense-fl-testbed
+
+python -m venv .venv
+source .venv/bin/activate      # macOS / Linux
+# .venv\Scripts\activate       # Windows
+
+pip install -e .
 ```
 
 ## Quick start
