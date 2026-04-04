@@ -6,7 +6,7 @@
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A multimodal sensor simulator for modality-heterogeneous federated learning research.
+A simulation testbed for modality-heterogeneous federated learning, where client sites have incompatible sensor modalities and no shared feature space.
 
 ![HeteroSense-FL benchmark results](docs/fig_benchmark.png)
 
@@ -23,7 +23,7 @@ configurable LiDAR / bed-pressure-mat subset, and produces structured 3D point c
 
 **Reusable software assets:**
 - `ClientFactory` — configure any N-client modality heterogeneity pattern in one line
-- `DatasetBuilder` — deterministic, seeded dataset generation  
+- `DatasetBuilder` — deterministic, seeded dataset generation
 - `TemporalWindowSampler` — plug-and-replace interface for temporal encoders
 - `run_validation` — automated observation integrity checks (V1–V4)
 - `heterosense-benchmark` — one-command Table 3 reproduction (~3 min)
@@ -128,7 +128,6 @@ Reproduced from `heterosense-benchmark` (seeds {42, 123, 7}; n_steps=3000; 3 FL 
 | 50 | round-robin | 0.366±0.003 | 0.381±0.017 | 0.277±0.003 | 0.300±0.015 | -0.015 |
 
 std. = standard accuracy; bal. = balanced accuracy (corrects for ABSENT-class dominance).  
-Reproduced with: Python 3.10, numpy 1.26 (seeds {42,123,7} fixed).  
 FedAvg outperforms Local under balanced accuracy in most conditions.
 
 ## Interactive notebook
