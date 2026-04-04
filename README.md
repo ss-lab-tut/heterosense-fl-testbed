@@ -6,7 +6,9 @@
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A simulation testbed for modality-heterogeneous federated learning, where client sites have incompatible sensor modalities and no shared feature space.
+A multimodal sensor simulator for modality-heterogeneous federated learning research.
+
+![HeteroSense-FL benchmark results](docs/fig_benchmark.png)
 
 **Who is it for?**  
 Researchers who need reproducible, controllable data for developing and comparing FL algorithms
@@ -26,6 +28,13 @@ configurable LiDAR / bed-pressure-mat subset, and produces structured 3D point c
 - `run_validation` — automated observation integrity checks (V1–V4)
 - `heterosense-benchmark` — one-command Table 3 reproduction (~3 min)
 
+## Scope and limitations
+
+HeteroSense-FL is a **controlled simulation testbed**, not a calibrated digital twin of physical
+sensors. Observation models (LiDAR point clouds, bed pressure maps) use researcher-defined
+Gaussian priors designed to reflect indoor sensing structure; they are not calibrated to specific
+hardware specifications. The software is intended for systematic algorithm comparison under
+reproducible, configurable heterogeneity conditions — not for deployment-ready sensor emulation.
 
 ## Installation
 
@@ -73,8 +82,20 @@ for window in sampler:
 heterosense-benchmark
 ```
 
-Single command. Seeds {42, 123, 7} fixed. Results serve as a baseline for
-algorithm comparison and are not a claim of best-in-class performance.
+Single command. Seeds {42, 123, 7} fixed. Runs in approximately 3 minutes on a
+standard laptop (Python 3.10, numpy 1.26, no GPU required).  
+Results serve as a reproducible baseline for algorithm comparison and are not a
+claim of best-in-class performance.
+
+**Expected output (truncated):**
+
+```
+N=3  homogeneous : Local=0.366±0.009  FedAvg=0.419±0.023  Δ=-0.053
+N=3  round-robin : Local=0.379±0.021  FedAvg=0.383±0.009  Δ=-0.004
+N=10 round-robin : Local=0.361±0.006  FedAvg=0.368±0.017  Δ=-0.008
+N=20 round-robin : Local=0.362±0.005  FedAvg=0.368±0.006  Δ=-0.007
+N=50 round-robin : Local=0.366±0.003  FedAvg=0.381±0.017  Δ=-0.015
+```
 
 ## Key components
 
@@ -107,8 +128,8 @@ Reproduced from `heterosense-benchmark` (seeds {42, 123, 7}; n_steps=3000; 3 FL 
 | 50 | round-robin | 0.366±0.003 | 0.381±0.017 | 0.277±0.003 | 0.300±0.015 | -0.015 |
 
 std. = standard accuracy; bal. = balanced accuracy (corrects for ABSENT-class dominance).  
+Reproduced with: Python 3.10, numpy 1.26 (seeds {42,123,7} fixed).  
 FedAvg outperforms Local under balanced accuracy in most conditions.
-
 
 ## Interactive notebook
 
@@ -125,6 +146,8 @@ jupyter notebook examples/quickstart.ipynb
 pip install -e ".[dev]"
 pytest tests/ -v
 ```
+
+37 automated tests · Python 3.9, 3.10, 3.11, 3.12 · Linux, macOS, Windows · CI via GitHub Actions
 
 ## Documentation
 
