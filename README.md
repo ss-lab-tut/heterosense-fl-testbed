@@ -6,7 +6,7 @@
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A multimodal simulation testbed for modality-heterogeneous federated learning research.
+A simulation testbed for modality-heterogeneous federated learning, where client sites have incompatible sensor modalities and no shared feature space.
 
 **Who is it for?**  
 Researchers who need reproducible, controllable data for developing and comparing FL algorithms
