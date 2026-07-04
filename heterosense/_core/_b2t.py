@@ -47,14 +47,19 @@ class B2TSnapshot:
 
 def generate_b2t_night(rng: np.random.Generator, snapshot: B2TSnapshot,
                        n_exits: int, night_seconds: int = 8 * 3600,
-                       move_seconds: float = 4.0):
+                       move_seconds: float = 4.0, flicker_period_s: float = 150.0):
     """Generate one night of B2T episodes at 1-Hz resolution.
+
+    In-bed restlessness ("flicker"): while in bed the resident produces a brief motion
+    roughly every `flicker_period_s` seconds. This is why a single bedroom PIR cannot
+    resolve sub-minute B2T trips — a short absence is indistinguishable from the normal
+    gap between in-bed movements (the anchor mechanism). Set `flicker_period_s<=0` to
+    disable. NOTE: this is an UNcalibrated behavioral assumption (sim-to-real table).
 
     Returns
     -------
     motion : np.ndarray[bool], shape (night_seconds,)
-        True where the resident is moving in the bedroom (PIR-observable). A B2T
-        episode = brief motion at exit, absence while away, brief motion at return.
+        True where the resident is moving in the bedroom (PIR-observable).
     truth  : list[tuple[int, int]]
         Ground-truth (exit_second, return_second) pairs (the events to be detected).
     """
@@ -75,4 +80,14 @@ def generate_b2t_night(rng: np.random.Generator, snapshot: B2TSnapshot,
         motion[exit_s + dur_s: exit_s + dur_s + mv] = True        # return movement
         truth.append((exit_s, exit_s + dur_s))
         cursor = exit_s + dur_s + mv + 1
+    # in-bed restlessness flicker: brief motion ~every flicker_period_s while in bed
+    if flicker_period_s and flicker_period_s > 0:
+        in_bed = np.ones(night_seconds, dtype=bool)
+        for e, r in truth:
+            in_bed[e:r] = False                       # away during trips
+        t = 0
+        while t < night_seconds:
+            t += int(max(1, rng.exponential(flicker_period_s)))
+            if t < night_seconds and in_bed[t]:
+                motion[t:t + 1] = True                # a brief in-bed movement
     return motion, truth
