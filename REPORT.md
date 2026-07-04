@@ -101,6 +101,19 @@ centralized が pir_pressure で local より悪い（1.55 vs 0.16）＝単一�
 | 圧力/LiDAR 分離度 | v1 由来 | v1 観測モデルの既定描画（無改造） |
 | morning-discovery cap | 仮定 | 120分（取りこぼし長期臥床の朝発見） |
 
+## 5.5 行動/観測の RNG 分離（検証済, `tests/test_behavior_invariant.py`）
+- **潜在状態軌跡はセンサ構成に不変**: 同一 seed で PIR 有効/無効の LatentState 系列は
+  byte 一致（BehaviorModel.generate は観測前に走り PIR フィールドを読まない）。
+  → 副図（数 vs 種類）は**同一行動実現を異なるセンサ構成で観測する対応比較（paired）として成立**。
+  旗艦図の系列内 4 方式比較も同一 homes 上の paired 比較。系列間（pir_only/pir_pressure/lidar）は
+  独立 seed の別コホートで、中央値による非対応（unpaired）比較（行動不変ゆえ将来 seed 共有で
+  paired 化も可能）。
+- **圧力は LiDAR の有効/無効に不変でない（事実として記録）**: observe() が lidar→pressure の順で
+  共有 rng を消費するため、lidar 無効時は pressure の rng 状態がずれ全フレーム変化（非対称：
+  lidar は pressure 有無に不変＝先に生成）。v1 由来の設計で **v1 互換の範囲内**（固定構成では v1 と
+  一致）。フェーズC は各モダリティ特徴を単一チャネルの ObservationModel で計算するため本研究の
+  結果には影響しない。真の分離が要る場合は §7 の子RNG化（fall-motion と同型）で解消可能。
+
 ## 6. アンカー・恒等式のトリップワイヤ（全て通過）
 - 単一PIR recall = 0.25（61軒実測 0.03–0.55 の範囲内）→ アンカー整合。
 - LiDAR上界 代償 = 0.08分（≥0）→ 恒等式（観測を良くしても遅延は分位点で下げ止まる）整合。
