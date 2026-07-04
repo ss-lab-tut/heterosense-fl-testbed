@@ -14,7 +14,10 @@ SEED = 2031
 KNOB_CELLS = [(1, 5, 0), (1, 5, 30), (1, 5, 60), (1, 30, 30), (2, 5, 0), (2, 5, 60)]
 
 
-def build_homes(series, n_per_cell, n_nights, missing_support_frac=0.3):
+def build_homes(series, n_per_cell, n_nights, missing_support_frac=0.3, seed_offset=0):
+    """seed_offset=0 (default) shares behavior seeds across series -> PAIRED comparison
+    (home k has the same B2T behavior in every series). A nonzero per-series offset makes
+    the series independent cohorts -> UNPAIRED (used only for the robustness check)."""
     homes = []
     hid = 0
     rng = np.random.default_rng(SEED)
@@ -25,7 +28,7 @@ def build_homes(series, n_per_cell, n_nights, missing_support_frac=0.3):
             if series == "pir_pressure":
                 has_pressure = rng.random() >= missing_support_frac
             homes.append(S.generate_home(f"{series}_{hid}", series, count, refr, rep,
-                                         has_pressure, n_nights, seed=SEED + hid * 7))
+                                         has_pressure, n_nights, seed=SEED + hid * 7 + seed_offset))
             hid += 1
     return homes
 

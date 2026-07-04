@@ -105,9 +105,12 @@ centralized が pir_pressure で local より悪い（1.55 vs 0.16）＝単一�
 - **潜在状態軌跡はセンサ構成に不変**: 同一 seed で PIR 有効/無効の LatentState 系列は
   byte 一致（BehaviorModel.generate は観測前に走り PIR フィールドを読まない）。
   → 副図（数 vs 種類）は**同一行動実現を異なるセンサ構成で観測する対応比較（paired）として成立**。
-  旗艦図の系列内 4 方式比較も同一 homes 上の paired 比較。系列間（pir_only/pir_pressure/lidar）は
-  独立 seed の別コホートで、中央値による非対応（unpaired）比較（行動不変ゆえ将来 seed 共有で
-  paired 化も可能）。
+  旗艦図は**系列間も paired**（home k は全系列で同一 behavior seed=SEED+k·7、24/24 軒で
+  true_events 一致を確認）＋系列内 4 方式も同一 homes で paired。行動不変性がこれを保証。
+- **対応 vs 非対応の頑健性（確認済）**: 系列を独立 seed（非対応）にしても、系列コスト順位
+  `pir_only(≈112分) ≫ pir_pressure(≈0.2–0.9分) > lidar_upper(0.08分)` と方式順位
+  `modality_group < fedavg` は**双方で不変**。中央値は pir_pressure 内でのみ別 home draw により
+  小変動（例 modality_group 0.19↔0.75）するが結論は不変。**paired を正典**とする。
 - **圧力は LiDAR の有効/無効に不変でない（事実として記録）**: observe() が lidar→pressure の順で
   共有 rng を消費するため、lidar 無効時は pressure の rng 状態がずれ全フレーム変化（非対称：
   lidar は pressure 有無に不変＝先に生成）。v1 由来の設計で **v1 互換の範囲内**（固定構成では v1 と
