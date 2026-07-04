@@ -35,11 +35,25 @@ GitHub 連携でリポジトリを有効化 → 新規 Release を publish → D
 4. `v2-dev` → `main` マージ、タグ `v2.0.0`、GitHub Release 作成
    （リリースノートは CHANGELOG から生成）。**← 人間が Web UI で publish（外向き操作）。**
 5. Zenodo が新 version DOI を自動発行 → 本ファイルに追記。連携無効なら上記手動3手順を依頼。
-6. 旗艦論文 Methods 用英文雛形:
-   > Simulations use HeteroSense-FL v2 (DOI: 10.5281/zenodo.XXXXXXXX), a
-   > backward-compatible extension of HeteroSense-FL v1 (Shao et al., 2026;
-   > DOI: 10.5281/zenodo.19326703) adding temporal-resolution, coverage, and
-   > geometry controls. All-versions DOI: 10.5281/zenodo.19326702.
+6. 旗艦論文 Methods 用英文雛形 → 下記「Methods 用 英文雛形」を参照（v2.0 は
+   temporal-resolution ノブのみ。coverage/geometry は v2.1）。
 
 ## v2 DOI（発行後に追記）
 _(pending — フェーズD の GitHub Release publish 後)_
+
+## v2.0.0 リリース — 残りの人間作業（外向き操作。Claude Code は実行しない）
+
+ローカル準備完了（v2-dev で全実装・全テスト green、CHANGELOG/README 確定、
+下記の通りローカルで main へマージ＋タグ v2.0.0 済み・**未push**）。人間の Web UI 操作:
+
+1. `git push origin main --tags`（公開リポジトリへ push。外向き・不可逆）。
+2. GitHub で **Release v2.0.0 を publish**（リリースノートは CHANGELOG [2.0.0] から生成）。
+3. Zenodo–GitHub 連携が新 **version DOI** を concept 10.5281/zenodo.19326702 の下に自動発行。
+   発行後、その DOI を本ファイル「v2 DOI」欄と下記 Methods 雛形に記入。
+
+## 旗艦論文 Methods 用 英文雛形（DOI はリリース後に確定）
+> Simulations use HeteroSense-FL v2.0 (DOI: 10.5281/zenodo.XXXXXXXX), a backward-compatible
+> extension of HeteroSense-FL v1 (Shao et al., 2026; DOI: 10.5281/zenodo.19326703) adding a
+> temporal-resolution (PIR) control. The bed-to-toilet return-time distribution is calibrated
+> to 61 community homes from the CASAS corpus (Zenodo 10.5281/zenodo.15708568, CC-BY-4.0).
+> All-versions DOI: 10.5281/zenodo.19326702.

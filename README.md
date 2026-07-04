@@ -170,3 +170,26 @@ Design tutorial: [docs/tutorial.md](docs/tutorial.md)
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+---
+
+## v2.0 — temporal-resolution (PIR) extension
+
+v2.0 adds a **PIR/motion modality** with a temporal-resolution knob, fully backward
+compatible (any v1 config yields v1-identical output; see `CHANGELOG.md`).
+
+```python
+from heterosense import ClientConfig
+# Enable the PIR modality (default: all zero = disabled = v1 behavior)
+cfg = ClientConfig(client_id="h1",
+                   bedroom_sensor_count=1,   # >=1 enables PIR; 1 = CASAS-typical
+                   refractory_s=5.0,         # PIR dead time after a firing [s]
+                   report_period_s=30.0)     # event-report quantization [s]
+```
+
+- **Reproduce v1 exactly**: `git checkout v1.0.0` (or leave the new knobs at their defaults).
+- **Validation anchor**: a single bedroom PIR cannot observe sub-minute bed-to-toilet trips
+  (`tests/test_anchor.py`), calibrated to the 61-home CASAS B2T distribution
+  (`heterosense/_data/b2t_snapshot.json`; regenerate via `tools/make_b2t_snapshot.py`).
+- **Flagship FL study**: `experiments/fl_observation_layer/` (see `REPORT.md`).
+- Coverage + room-geometry knobs are planned for **v2.1** (design reserved in `EXTENSION_MAP.md`).

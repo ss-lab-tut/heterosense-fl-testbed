@@ -2,15 +2,20 @@
 
 All notable changes to HeteroSense-FL are documented here.
 
-## [Unreleased] — v2 (branch `v2-dev`)
+## [2.0.0] — 2026-07-04
 
-Backward-compatible extension adding three experiment knobs. All new config fields
-default to v1 behavior; `tests/test_v1_compat.py` will enforce numeric-identical
-output for v1 default configs. Design: see `EXTENSION_MAP.md`.
+Backward-compatible extension. Scope (Alt-C / split release): **v2.0 = temporal-resolution
+knob only**; coverage + geometry deferred to v2.1 (insertion points reserved — see
+EXTENSION_MAP.md §7 extensibility contract). Design: see `EXTENSION_MAP.md`.
 
-Scope decided (2026-07-04, Alt-C / split release): **v2.0 = temporal-resolution knob
-only**; coverage + geometry deferred to v2.1 (insertion points reserved — see
-EXTENSION_MAP.md §7 extensibility contract).
+**Backward-compatibility guarantee**: any v1 config produces v1-identical output
+(`tests/test_v1_compat.py` pins the v1.0.0 golden digest). To reproduce v1 exactly:
+`git checkout v1.0.0`. All 43 tests pass (37 v1 + 4 anchor + 2 compat).
+
+**Known limitations**: in-bed flicker / exit rate / morning cap are UNcalibrated behavioral
+assumptions (only the B2T duration distribution is real-calibrated); the flagship study's
+observation model is a simple windowed classifier; downstream injection uses a per-event
+approximation (REPORT.md §7).
 
 ### Added (v2.0, Phase B — implemented, 43 tests passing)
 - Temporal-resolution knob: PIR/motion modality with `refractory_s`, `report_period_s`,
