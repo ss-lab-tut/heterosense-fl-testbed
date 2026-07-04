@@ -64,6 +64,7 @@ class LatentState:
     abnormal_type:   AbnormalType
     bed_zone:        BedZone = BedZone.OFF_BED
     abnormal_phase:  int     = 0  # 0=not ABNORMAL, 1=impact, 2+=rest
+    room_id:         int     = 0  # v2.1 geometry seam (default 0 = single room = v1)
 
 
 # ---------------------------------------------------------------------------
