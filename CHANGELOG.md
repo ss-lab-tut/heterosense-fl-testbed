@@ -26,9 +26,12 @@ approximation (REPORT.md §7).
   Provenance embedded (longlie_study commit 0baaf8c, source DOI 10.5281/zenodo.15708568,
   CC-BY-4.0). **Snapshot updates are an explicit, CHANGELOG-documented operation only.**
 - `LatentState.room_id` (default 0) — reserved seam for the v2.1 geometry knob.
-- Anchor verification `tests/test_anchor.py`: single bedroom PIR recall 0.10–0.14 (within the
-  observed 61-home range 0.03–0.55); recovers with a 2nd absence-confirming sensor. Snapshot
-  data-hash pinned. Mechanism-driven, not tuned (base_gap = longlie_study G = 5 min).
+- Anchor verification `tests/test_anchor.py`: single bedroom PIR extractor "anchor recall"
+  within the observed 61-home range 0.03–0.55; recovers with a 2nd absence-confirming sensor.
+  Snapshot data-hash pinned. Mechanism-driven, not tuned (base_gap = longlie_study G = 5 min).
+  NOTE: adding the in-bed flicker consumed the shared RNG stream, shifting the extractor anchor
+  recall from 0.138 to 0.179 (both inside the 61-home range). The anchor test is now two-layer:
+  an exact drift guard (0.179 ± 0.005) plus the separate 61-home-range consistency check.
 - Backward-compat regression `tests/test_v1_compat.py`: v1 default config → byte-identical to
   v1.0.0 (golden digest 30c0e25…).
 

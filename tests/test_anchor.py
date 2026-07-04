@@ -41,14 +41,33 @@ def test_snapshot_hash_pinned():
     assert snap.provenance.get("source_data_doi") == "10.5281/zenodo.15708568"
 
 
-def test_anchor_single_pir_recall_collapses():
-    """Single bedroom PIR: recall lands in the observed 61-home range (0.03–0.55)."""
+def _single_pir_extractor_recall():
     snap = B2TSnapshot.load()
     motion, truth = _stream(snap)
     pm = PIRModel(_Cfg(1, 5.0, 0.0), rng=np.random.default_rng(7))
     ev = pm.observe_sequence(motion, delta_t=1.0)
-    recall = b2t_recall(ev, truth, report_period_s=0.0, base_gap_s=BASE_GAP_S, sensor_count=1)
-    assert 0.03 <= recall <= 0.55, f"single-PIR recall {recall:.3f} outside 61-home range"
+    return b2t_recall(ev, truth, report_period_s=0.0, base_gap_s=BASE_GAP_S, sensor_count=1)
+
+
+# Pinned exact value of the IDEAL EXTRACTOR's anchor recall ("anchor recall"; see REPORT
+# terminology). Distinct from the FL learned-model event recall (~0.25). Fixed seeds ->
+# deterministic. Purpose: catch UNINTENDED drift in the _b2t generator (e.g. the flicker
+# addition shifted this from 0.138 to 0.179 via RNG-stream consumption; a wide range hid it).
+ANCHOR_RECALL_EXACT = 0.1792
+
+
+def test_extractor_anchor_exact_no_drift():
+    """(a) Drift guard: extractor anchor recall must match the pinned value within +-0.005."""
+    r = _single_pir_extractor_recall()
+    assert abs(r - ANCHOR_RECALL_EXACT) <= 0.005, (
+        f"extractor anchor recall {r:.4f} drifted from pinned {ANCHOR_RECALL_EXACT} "
+        f"(> +-0.005) — a _b2t/PIR change moved it; update only via a CHANGELOG-documented op")
+
+
+def test_extractor_anchor_in_61home_range():
+    """(b) Real-data consistency: extractor anchor recall inside the observed 61-home range."""
+    r = _single_pir_extractor_recall()
+    assert 0.03 <= r <= 0.55, f"single-PIR recall {r:.3f} outside 61-home range 0.03-0.55"
 
 
 def test_anchor_report_period_monotone():
