@@ -140,6 +140,15 @@ class ClientConfig:
     bed_position:        tuple[float, float] = (2.5, 2.5)
     bed_radius:          float = 0.8
 
+    # --- v2.0 temporal-resolution knob (PIR modality). Defaults reproduce v1 exactly
+    #     (bedroom_sensor_count=0 -> PIR disabled -> no new output, no rng perturbation). ---
+    bedroom_sensor_count: int   = 0     # 0 = PIR modality disabled (v1); >=1 = N bedroom PIRs
+    refractory_s:        float = 0.0    # PIR dead time after a firing [s]
+    report_period_s:     float = 0.0    # event-report quantization period [s]; 0 = immediate
+    # --- v2.1 hooks (NOT implemented in v2.0; here so v2.1 needs no schema redesign).
+    #     coverage: pir_fov_coverage, pir_blind_spot_rate, pressure_coverage_fraction
+    #     geometry: room_count, room_topology, bed_toilet_distance_m ---
+
     _ALLOWED_CHANNELS: frozenset = frozenset({"lidar", "bed"})
 
     def __post_init__(self) -> None:
@@ -160,6 +169,11 @@ class ClientConfig:
             raise ValueError(f"client {self.client_id}: bed_position must be (x, y), got {self.bed_position}")
         if len(self.lidar_position) != 2:
             raise ValueError(f"client {self.client_id}: lidar_position must be (x, y), got {self.lidar_position}")
+        # v2.0 PIR knob validation (defaults 0 -> disabled -> v1)
+        if self.bedroom_sensor_count < 0:
+            raise ValueError(f"client {self.client_id}: bedroom_sensor_count must be >= 0")
+        _require_nonnegative(self.refractory_s,    f"client {self.client_id}: refractory_s")
+        _require_nonnegative(self.report_period_s, f"client {self.client_id}: report_period_s")
 
     @classmethod
     def from_dict(
@@ -190,6 +204,9 @@ class ClientConfig:
             bed_edge_sensitivity=float(d.get("bed_edge_sensitivity", 0.8)),
             bed_position=(float(bp[0]), float(bp[1])),
             bed_radius=float(d.get("bed_radius", 0.8)),
+            bedroom_sensor_count=int(d.get("bedroom_sensor_count", 0)),
+            refractory_s=float(d.get("refractory_s", 0.0)),
+            report_period_s=float(d.get("report_period_s", 0.0)),
         )
 
     def has_channel(self, ch: str) -> bool:

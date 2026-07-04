@@ -132,3 +132,46 @@ Tests: 37 (ClientFactory, DatasetBuilder, TemporalWindowSampler, validation V1�
 
 **承認事項**: (1) 代替B で進めてよいか。(2) スコープは 3ノブ一括(v2.0)か分割(C)か。
 (3) B2T 較正に longlie_study の実測 B2T 分布を使う（import のみ）ことの可否。
+
+---
+
+## 6. 決定記録（2026-07-04, PI 承認済み）
+
+- **スコープ = 代替C（分割）**: **v2.0 は時間分解能ノブ（PIR モダリティ）のみ**。被覆・部屋形状は
+  v2.1 へ延期（理由: 論文の急所=アンカー再現＋副図は時間分解能ノブ単独で閉じる。9月拘束下で
+  「リリース可能な v2.0 に最短到達」を優先。リリースはタグ+DOIでコストほぼ0のため分割にペナルティ無し）。
+- **B2T 較正 = スナップショット凍結**（下記条件付き）:
+  - `tools/make_b2t_snapshot.py` を同梱（longlie_study があれば1コマンド再生成）。
+  - 来歴埋め込み: longlie_study commit `0baaf8c`, 元データ DOI 10.5281/zenodo.15708568,
+    生成日 2026-07-04, CC-BY-4.0 帰属。→ `heterosense/_data/b2t_snapshot.json`。
+  - アンカー検証テストは **data-only hash `a3fe5e91…` に固定**。更新は CHANGELOG 記載の明示操作のみ。
+  - スナップショット実測: n=3996(60軒), median 1.93分, sub-minute 27%。
+
+## 7. v2.1 拡張性コントラクト（分割リリースの唯一の事故=後から挿せない設計、を防ぐ）
+
+被覆・部屋形状ノブは **実装しないが挿入点を確保**。以下を v2.0 実装で満たした:
+- **PIR クラス（`_pir_model.py`）**: `PIRSensor` に `position/fov_coverage/blind_spot_rate/room_id`
+  フィールドを既定=全被覆で保持。発火ループは各モーション標本を `_covers(rng)` に通すため、
+  v2.1 被覆ノブは**これらフィールドを埋めるだけ**で有効化（ループ再設計不要）。
+- **ジオメトリ seam**: `observe_sequence` は潜在状態の `room_id` を `getattr(默认0)` で読む設計。
+  `LatentState.room_id`（既定0）を v2.0 で追加済み → v2.1 多部屋は room_id を分岐させるだけ。
+- **B2T seam**: v2.0 は away-duration をスナップショットから直接標本化（`_b2t.py`）。v2.1 ジオメトリは
+  同じ `generate_b2t_night` の duration 供給を「距離/歩行速度から導出」に差し替えるだけ。
+- **抽出器（`_extractor.py`）**: `effective_gap_s` が `sensor_count>=2` で不在確定＝gap 縮小、を既に分岐。
+  v2.1 被覆はこの分岐に FOV/死角を加えるだけ。副図（<1分B2T回復の最小センサ追加）はここで閉じる。
+- **Config**: v2.1 フィールド（pir_fov_coverage 等）を `ClientConfig` コメントに予約済み（§ClientConfig）。
+
+→ **後から挿せない設計になっていないことを確認済み**（PI 条件充足）。
+
+## 8. フェーズB 実装済み（v2.0, tests 43 passing）
+
+- `heterosense/_core/_pir_model.py`（PIRModel: refractory/report_period/count, 別 rng で v1 不撹乱）
+- `heterosense/_core/_b2t.py`（B2TSnapshot 逆CDF標本化 + B2T 夜生成）
+- `heterosense/_core/_extractor.py`（注釈非依存 B2T 抽出器・機構ベース）
+- `heterosense/_data/b2t_snapshot.json`（凍結スナップショット）+ `tools/make_b2t_snapshot.py`
+- `ClientConfig` に PIR ノブ3項目（既定=無効=v1）
+- `tests/test_anchor.py`（4: hash固定・単一PIR recall 0.10–0.14 が 61軒範囲, report_period 単調, 2sensor回復）
+- `tests/test_v1_compat.py`（2: v1.0.0 golden digest `30c0e25…` とバイト一致）
+- **アンカー再現**: 単一 PIR recall≈0.10–0.14（61軒実測 0.03–0.55 の範囲内）。合わせ込みなし
+  （base_gap=300s=longlie の G=5分）。
+
