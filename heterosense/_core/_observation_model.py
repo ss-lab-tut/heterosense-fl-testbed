@@ -216,18 +216,18 @@ def _generate_abnormal_impact(
 
 def _apply_post_fall_motion(
     pts: np.ndarray,
-    ls: LatentState,
     ox: float,
     oy: float,
+    pattern: str,
+    fall_direction: float,
+    abnormal_phase: int,
     rng: np.random.Generator,
     noise_scale: float,
 ) -> np.ndarray:
     """Add phase-dependent post-fall movement diversity."""
     child = rng.spawn(1)[0]
-    fall_direction = float(getattr(ls, "fall_direction", 0.0))
     pts = _rotate_xy(pts, fall_direction, (ox, oy))
-    pattern = getattr(ls, "motion_pattern", "NONE")
-    phase = max(1, ls.abnormal_phase)
+    phase = max(1, abnormal_phase)
 
     if pattern == "STILL":
         pts[:, :2] += child.normal(0.0, 0.015, size=(len(pts), 2))
@@ -293,6 +293,8 @@ class ObservationModel:
         self._rng         = rng
         self._client_id   = config.client_id
         self._fall_motion_diversity = config.fall_motion_diversity
+        self._fall_motion_pattern = "NONE"
+        self._fall_direction = 0.0
 
     # ------------------------------------------------------------------
     # LiDAR point cloud generation
@@ -324,9 +326,18 @@ class ObservationModel:
         # ABNORMAL phase 1: splatter pattern / optional v2.x diverse impact patterns
         if ls.state == SemanticState.ABNORMAL and ls.abnormal_phase == 1:
             if self._fall_motion_diversity:
+                child = rng.spawn(1)[0]
+                self._fall_motion_pattern = str(child.choice([
+                    "STILL",
+                    "ROLL",
+                    "LIMB_MOVEMENT",
+                    "SIT_UP_ATTEMPT",
+                    "CRAWL_SHIFT",
+                ], p=[0.28, 0.22, 0.22, 0.18, 0.10]))
+                self._fall_direction = float(child.uniform(0.0, 2.0 * np.pi))
                 variant = _sample_fall_variant(ls, rng)
                 impact = _generate_abnormal_impact(ox, oy, variant, rng, ns)
-                impact = _rotate_xy(impact, float(getattr(ls, "fall_direction", 0.0)), (ox, oy))
+                impact = _rotate_xy(impact, self._fall_direction, (ox, oy))
                 impact[:, 2] = np.clip(impact[:, 2], 0.0, 1.3)
                 parts.append(impact)
             else:
@@ -336,6 +347,9 @@ class ObservationModel:
                 splatter[:, 2] = np.clip(splatter[:, 2], 0.0, 0.5)
                 parts.append(splatter)
         else:
+            if ls.state != SemanticState.ABNORMAL:
+                self._fall_motion_pattern = "NONE"
+                self._fall_direction = 0.0
             # Normal body parts
             n_torso = _N_TORSO[posture]
             tc = _TORSO_CENTRE[posture]
@@ -385,7 +399,16 @@ class ObservationModel:
             and ls.state == SemanticState.ABNORMAL
             and ls.abnormal_phase >= 2
         ):
-            pts = _apply_post_fall_motion(pts, ls, ox, oy, rng, ns)
+            pts = _apply_post_fall_motion(
+                pts,
+                ox,
+                oy,
+                self._fall_motion_pattern,
+                self._fall_direction,
+                ls.abnormal_phase,
+                rng,
+                ns,
+            )
 
         # Motion blur for WALKING
         if ls.state == SemanticState.WALKING:

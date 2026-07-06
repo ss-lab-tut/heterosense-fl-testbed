@@ -1,16 +1,31 @@
 import numpy as np
 
-from heterosense._core._behavior_model import BehaviorModel, SemanticState
+from heterosense._core._behavior_model import (
+    AbnormalType,
+    BedZone,
+    LatentState,
+    Posture,
+    SemanticState,
+)
+from heterosense._core._observation_model import ObservationModel
 from heterosense._core._config_schema import ClientConfig
 
 
-def _abnormal_states(enabled: bool):
-    cfg = ClientConfig(
-        client_id="fall",
-        abnormal_rate=1.0,
-        fall_motion_diversity=enabled,
+def _impact_lidar(enabled: bool):
+    cfg = ClientConfig(client_id="fall", fall_motion_diversity=enabled)
+    obs = ObservationModel(cfg, np.random.default_rng(42))
+    state = LatentState(
+        t=0,
+        state=SemanticState.ABNORMAL,
+        x=2.5,
+        y=2.5,
+        velocity=0.0,
+        posture=Posture.LYING,
+        abnormal_type=AbnormalType.FALL,
+        bed_zone=BedZone.OFF_BED,
+        abnormal_phase=1,
     )
-    return BehaviorModel(cfg, np.random.default_rng(42)).generate(8)
+    return obs.observe(state, 0.0).lidar
 
 
 def test_fall_motion_diversity_defaults_to_disabled():
@@ -19,10 +34,9 @@ def test_fall_motion_diversity_defaults_to_disabled():
 
 
 def test_fall_motion_diversity_is_opt_in():
-    off = [s for s in _abnormal_states(False) if s.state == SemanticState.ABNORMAL]
-    on = [s for s in _abnormal_states(True) if s.state == SemanticState.ABNORMAL]
+    off = _impact_lidar(False)
+    on = _impact_lidar(True)
 
-    assert off
-    assert on
-    assert {getattr(s, "motion_pattern", "NONE") for s in off} == {"NONE"}
-    assert any(getattr(s, "motion_pattern", "NONE") != "NONE" for s in on)
+    assert off is not None
+    assert on is not None
+    assert off.shape != on.shape or not np.array_equal(off, on)
