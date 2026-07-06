@@ -65,8 +65,6 @@ class LatentState:
     bed_zone:        BedZone = BedZone.OFF_BED
     abnormal_phase:  int     = 0  # 0=not ABNORMAL, 1=impact, 2+=rest
     room_id:         int     = 0  # v2.1 geometry seam (default 0 = single room = v1)
-    motion_pattern:  str     = "NONE"
-    fall_direction:  float   = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -307,8 +305,57 @@ class BehaviorModel:
     # Main generation loop
     # ------------------------------------------------------------------
 
+    def _generate_v1_compatible(self, n_steps: int) -> list[LatentState]:
+        """Generate with the unchanged v1/v2-default path."""
+        result:          list[LatentState] = []
+        current_state  = SemanticState.ABSENT
+        x, y           = -1.0, -1.0
+        posture        = Posture.UPRIGHT
+        abnormal_steps = 0   # consecutive ABNORMAL steps
+        transition_steps  = 0  # steps spent in current TRANSITION episode
+        transition_target = 0  # sampled duration of current TRANSITION episode
+
+        for t in range(n_steps):
+            next_state = self._sample_next_state(current_state)
+            # Variable-length TRANSITION: sample duration on entry, enforce it
+            if current_state != SemanticState.TRANSITION and next_state == SemanticState.TRANSITION:
+                # Sample TRANSITION duration [2, 6] steps at entry
+                transition_target = int(self.rng.integers(2, 7))
+                transition_steps = 0
+            if current_state == SemanticState.TRANSITION:
+                transition_steps += 1
+                if transition_steps < transition_target and next_state != SemanticState.TRANSITION:
+                    next_state = SemanticState.TRANSITION  # extend to meet target duration
+            elif next_state != SemanticState.TRANSITION:
+                transition_steps = 0
+                transition_target = 0
+            x_prev, y_prev = x, y
+            x, y      = self._update_position(current_state, next_state, x, y)
+            velocity  = self._compute_velocity(next_state, x_prev, y_prev, x, y)
+            posture   = self._update_posture(posture, next_state)
+            bed_zone  = self._compute_bed_zone(x, y, next_state, posture)
+            # abnormal_phase updated before ab_type so subtype is correct
+            if next_state == SemanticState.ABNORMAL:
+                abnormal_steps += 1
+            else:
+                abnormal_steps = 0
+            ab_phase  = abnormal_steps if next_state == SemanticState.ABNORMAL else 0
+            ab_type   = self._get_abnormal_type(next_state, ab_phase)
+
+            result.append(LatentState(
+                t=t, state=next_state, x=x, y=y, velocity=velocity,
+                posture=posture, abnormal_type=ab_type,
+                bed_zone=bed_zone, abnormal_phase=ab_phase,
+            ))
+            current_state = next_state
+
+        return self._reclassify_abnormal_subtypes(result)
+
     def generate(self, n_steps: int) -> list[LatentState]:
         """Generate n_steps LatentState objects with ABNORMAL 2-phase tracking."""
+        if not self._fall_motion_diversity:
+            return self._generate_v1_compatible(n_steps)
+
         result:          list[LatentState] = []
         current_state  = SemanticState.ABSENT
         x, y           = -1.0, -1.0
@@ -378,13 +425,14 @@ class BehaviorModel:
             motion_pattern = abnormal_motion_pattern if next_state == SemanticState.ABNORMAL else "NONE"
             fall_direction = abnormal_fall_direction if next_state == SemanticState.ABNORMAL else 0.0
 
-            result.append(LatentState(
+            latent_state = LatentState(
                 t=t, state=next_state, x=x, y=y, velocity=velocity,
                 posture=posture, abnormal_type=ab_type,
                 bed_zone=bed_zone, abnormal_phase=ab_phase,
-                motion_pattern=motion_pattern,
-                fall_direction=fall_direction,
-            ))
+            )
+            latent_state.motion_pattern = motion_pattern
+            latent_state.fall_direction = fall_direction
+            result.append(latent_state)
             current_state = next_state
 
         return self._reclassify_abnormal_subtypes(result)

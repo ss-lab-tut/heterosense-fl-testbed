@@ -24,5 +24,5 @@ def test_fall_motion_diversity_is_opt_in():
 
     assert off
     assert on
-    assert {s.motion_pattern for s in off} == {"NONE"}
-    assert any(s.motion_pattern != "NONE" for s in on)
+    assert {getattr(s, "motion_pattern", "NONE") for s in off} == {"NONE"}
+    assert any(getattr(s, "motion_pattern", "NONE") != "NONE" for s in on)

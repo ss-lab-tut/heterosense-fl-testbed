@@ -224,8 +224,9 @@ def _apply_post_fall_motion(
 ) -> np.ndarray:
     """Add phase-dependent post-fall movement diversity."""
     child = rng.spawn(1)[0]
-    pts = _rotate_xy(pts, ls.fall_direction, (ox, oy))
-    pattern = ls.motion_pattern
+    fall_direction = float(getattr(ls, "fall_direction", 0.0))
+    pts = _rotate_xy(pts, fall_direction, (ox, oy))
+    pattern = getattr(ls, "motion_pattern", "NONE")
     phase = max(1, ls.abnormal_phase)
 
     if pattern == "STILL":
@@ -234,10 +235,10 @@ def _apply_post_fall_motion(
         return pts
 
     if pattern == "ROLL":
-        roll_angle = ls.fall_direction + 0.12 * phase
+        roll_angle = fall_direction + 0.12 * phase
         pts = _rotate_xy(pts, roll_angle, (ox, oy))
-        pts[:, 0] += 0.025 * phase * np.cos(ls.fall_direction)
-        pts[:, 1] += 0.025 * phase * np.sin(ls.fall_direction)
+        pts[:, 0] += 0.025 * phase * np.cos(fall_direction)
+        pts[:, 1] += 0.025 * phase * np.sin(fall_direction)
         pts[:, 2] += child.normal(0.0, 0.025, len(pts))
         return pts
 
@@ -252,18 +253,18 @@ def _apply_post_fall_motion(
         upper_mask = pts[:, 2] > float(np.percentile(pts[:, 2], 65))
         lift = min(0.08 * phase, 0.55)
         pts[upper_mask, 2] += lift + child.normal(0.0, 0.04, upper_mask.sum())
-        pts[upper_mask, 0] += 0.05 * phase * np.cos(ls.fall_direction)
-        pts[upper_mask, 1] += 0.05 * phase * np.sin(ls.fall_direction)
+        pts[upper_mask, 0] += 0.05 * phase * np.cos(fall_direction)
+        pts[upper_mask, 1] += 0.05 * phase * np.sin(fall_direction)
         support = _sample_ellipsoid(
-            (ox + 0.25 * np.cos(ls.fall_direction), oy + 0.25 * np.sin(ls.fall_direction), 0.35),
+            (ox + 0.25 * np.cos(fall_direction), oy + 0.25 * np.sin(fall_direction), 0.35),
             (0.12, 0.10, 0.18), 18, child, noise_scale * 0.8
         )
         return np.vstack([pts, support])
 
     if pattern == "CRAWL_SHIFT":
         shift = min(0.06 * phase, 0.45)
-        pts[:, 0] += shift * np.cos(ls.fall_direction)
-        pts[:, 1] += shift * np.sin(ls.fall_direction)
+        pts[:, 0] += shift * np.cos(fall_direction)
+        pts[:, 1] += shift * np.sin(fall_direction)
         pts[:, 2] += child.normal(0.0, 0.035, len(pts))
         return pts
 
@@ -325,7 +326,7 @@ class ObservationModel:
             if self._fall_motion_diversity:
                 variant = _sample_fall_variant(ls, rng)
                 impact = _generate_abnormal_impact(ox, oy, variant, rng, ns)
-                impact = _rotate_xy(impact, ls.fall_direction, (ox, oy))
+                impact = _rotate_xy(impact, float(getattr(ls, "fall_direction", 0.0)), (ox, oy))
                 impact[:, 2] = np.clip(impact[:, 2], 0.0, 1.3)
                 parts.append(impact)
             else:
