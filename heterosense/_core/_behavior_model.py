@@ -1,4 +1,4 @@
-﻿"""BehaSim BehaviorModel: latent semantic process via Markov chain."""
+"""BehaSim BehaviorModel: latent semantic process via Markov chain."""
 from __future__ import annotations
 
 import dataclasses
