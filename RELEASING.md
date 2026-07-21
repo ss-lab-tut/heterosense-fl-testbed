@@ -41,7 +41,7 @@ GitHub 連携でリポジトリを有効化 → 新規 Release を publish → D
 ## v2 DOI（発行後に追記）
 _(pending — フェーズD の GitHub Release publish 後)_
 
-## v2.0.0 リリース — 残りの人間作業（外向き操作。Claude Code は実行しない）
+## v2.0.0 リリース — 残りの人間作業（外向き操作。自動ツールでは実行しない）
 
 ローカル準備完了（v2-dev で全実装・全テスト green、CHANGELOG/README 確定、
 下記の通りローカルで main へマージ＋タグ v2.0.0 済み・**未push**）。人間の Web UI 操作:

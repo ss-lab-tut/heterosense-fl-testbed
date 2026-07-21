@@ -1,6 +1,6 @@
 # REPORT.md — HeteroSense-FL v2 ＋ FL観測層研究（旗艦）
 
-実行: Claude Code, 2026-07-04, branch `v2-dev`。v1 = tag `v1.0.0` (f74a061)。
+実行: 2026-07-04, branch `v2-dev`。v1 = tag `v1.0.0` (f74a061)。
 再現: `PYTHONPATH=. python experiments/fl_observation_layer/run_flagship.py --n_per_cell 4 --n_nights 8`
 → `figures.py`。全 seed 固定 (2031)。
 
