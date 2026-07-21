@@ -7,7 +7,7 @@ from typing import Optional
 import numpy as np
 
 from heterosense._core._behavior_model import (
-    LatentState, SemanticState, Posture, BedZone,
+    LatentState, SemanticState, Posture, BedZone, AbnormalType,
 )
 from heterosense._core._config_schema import ClientConfig
 
@@ -61,6 +61,25 @@ _LEGS_AXES: dict[Posture, tuple] = {
 # ABNORMAL phase 1: splatter pattern (impact)
 _N_SPLATTER: int = 120
 _SPLATTER_AXES: tuple = (0.60, 0.50, 0.20)
+
+_FALL_VARIANT_WEIGHTS: dict[AbnormalType, tuple[list[str], list[float]]] = {
+    AbnormalType.FALL: (
+        ["hard_floor", "side_fall", "braced_fall", "collapse"],
+        [0.35, 0.25, 0.25, 0.15],
+    ),
+    AbnormalType.RECOVERED_FALL: (
+        ["braced_fall", "collapse", "side_fall"],
+        [0.50, 0.30, 0.20],
+    ),
+    AbnormalType.NEAR_FALL: (
+        ["braced_fall", "collapse"],
+        [0.65, 0.35],
+    ),
+    AbnormalType.PROLONGED_IMMOBILITY: (
+        ["hard_floor", "side_fall", "occluded_floor"],
+        [0.45, 0.35, 0.20],
+    ),
+}
 
 # Background noise points
 _N_BACKGROUND: int = 10
@@ -129,6 +148,128 @@ def _apply_occlusion(
     keep = rng.random(len(pts)) > occlusion
     return pts[keep] if keep.any() else pts[:1]
 
+def _rotate_xy(
+    pts: np.ndarray,
+    angle: float,
+    origin: tuple[float, float],
+) -> np.ndarray:
+    """Rotate x/y coordinates around a room-space origin."""
+    c = float(np.cos(angle))
+    s = float(np.sin(angle))
+    out = pts.copy()
+    x = out[:, 0] - origin[0]
+    y = out[:, 1] - origin[1]
+    out[:, 0] = origin[0] + c * x - s * y
+    out[:, 1] = origin[1] + s * x + c * y
+    return out
+
+def _sample_fall_variant(ls: LatentState, rng: np.random.Generator) -> str:
+    """Choose a fall geometry variant for the current abnormal event."""
+    child = rng.spawn(1)[0]
+    variants, weights = _FALL_VARIANT_WEIGHTS.get(
+        ls.abnormal_type,
+        _FALL_VARIANT_WEIGHTS[AbnormalType.FALL],
+    )
+    probs = np.array(weights, dtype=np.float64)
+    probs /= probs.sum()
+    return variants[int(child.choice(len(variants), p=probs))]
+
+def _generate_abnormal_impact(
+    ox: float,
+    oy: float,
+    variant: str,
+    rng: np.random.Generator,
+    noise_scale: float,
+) -> np.ndarray:
+    """Generate diverse phase-1 fall point clouds.
+
+    The variants intentionally avoid a single z_mean/z_std signature. Most
+    points still remain near the floor so the event is plausible as a fall.
+    """
+    child = rng.spawn(1)[0]
+    if variant == "hard_floor":
+        pts = _sample_ellipsoid((ox, oy, 0.15), _SPLATTER_AXES, _N_SPLATTER, child, noise_scale)
+        pts[:, 2] = np.clip(pts[:, 2], 0.0, 0.5)
+        return pts
+
+    if variant == "side_fall":
+        torso = _sample_ellipsoid((ox, oy, 0.18), (0.75, 0.16, 0.12), 80, child, noise_scale)
+        head = _sample_ellipsoid((ox + 0.55, oy + 0.05, 0.24), (0.12, 0.10, 0.10), 25, child, noise_scale)
+        limbs = _sample_ellipsoid((ox - 0.45, oy - 0.10, 0.14), (0.45, 0.22, 0.08), 45, child, noise_scale)
+        return np.vstack([torso, head, limbs])
+
+    if variant == "braced_fall":
+        floor_body = _sample_ellipsoid((ox, oy, 0.18), (0.55, 0.35, 0.11), 85, child, noise_scale)
+        raised_arm = _sample_ellipsoid((ox + 0.35, oy + 0.20, 0.65), (0.14, 0.12, 0.28), 35, child, noise_scale)
+        head = _sample_ellipsoid((ox - 0.25, oy, 0.38), (0.12, 0.10, 0.14), 25, child, noise_scale)
+        return np.vstack([floor_body, raised_arm, head])
+
+    if variant == "collapse":
+        lower = _sample_ellipsoid((ox, oy, 0.16), (0.45, 0.30, 0.10), 70, child, noise_scale)
+        torso = _sample_ellipsoid((ox + 0.15, oy, 0.55), (0.25, 0.20, 0.30), 55, child, noise_scale)
+        head = _sample_ellipsoid((ox + 0.25, oy + 0.05, 0.92), (0.12, 0.10, 0.12), 25, child, noise_scale)
+        return np.vstack([lower, torso, head])
+
+    floor = _sample_ellipsoid((ox, oy, 0.13), (0.50, 0.28, 0.08), 70, child, noise_scale)
+    partial = _sample_ellipsoid((ox + 0.20, oy - 0.10, 0.32), (0.25, 0.18, 0.16), 25, child, noise_scale)
+    return np.vstack([floor, partial])
+
+def _apply_post_fall_motion(
+    pts: np.ndarray,
+    ox: float,
+    oy: float,
+    pattern: str,
+    fall_direction: float,
+    abnormal_phase: int,
+    rng: np.random.Generator,
+    noise_scale: float,
+) -> np.ndarray:
+    """Add phase-dependent post-fall movement diversity."""
+    child = rng.spawn(1)[0]
+    pts = _rotate_xy(pts, fall_direction, (ox, oy))
+    phase = max(1, abnormal_phase)
+
+    if pattern == "STILL":
+        pts[:, :2] += child.normal(0.0, 0.015, size=(len(pts), 2))
+        pts[:, 2] += child.normal(0.0, 0.01, len(pts))
+        return pts
+
+    if pattern == "ROLL":
+        roll_angle = fall_direction + 0.12 * phase
+        pts = _rotate_xy(pts, roll_angle, (ox, oy))
+        pts[:, 0] += 0.025 * phase * np.cos(fall_direction)
+        pts[:, 1] += 0.025 * phase * np.sin(fall_direction)
+        pts[:, 2] += child.normal(0.0, 0.025, len(pts))
+        return pts
+
+    if pattern == "LIMB_MOVEMENT":
+        limb_mask = pts[:, 2] < float(np.percentile(pts[:, 2], 45))
+        pts[limb_mask, 0] += child.normal(0.0, 0.12, limb_mask.sum())
+        pts[limb_mask, 1] += child.normal(0.0, 0.12, limb_mask.sum())
+        pts[limb_mask, 2] += child.normal(0.06, 0.04, limb_mask.sum())
+        return pts
+
+    if pattern == "SIT_UP_ATTEMPT":
+        upper_mask = pts[:, 2] > float(np.percentile(pts[:, 2], 65))
+        lift = min(0.08 * phase, 0.55)
+        pts[upper_mask, 2] += lift + child.normal(0.0, 0.04, upper_mask.sum())
+        pts[upper_mask, 0] += 0.05 * phase * np.cos(fall_direction)
+        pts[upper_mask, 1] += 0.05 * phase * np.sin(fall_direction)
+        support = _sample_ellipsoid(
+            (ox + 0.25 * np.cos(fall_direction), oy + 0.25 * np.sin(fall_direction), 0.35),
+            (0.12, 0.10, 0.18), 18, child, noise_scale * 0.8
+        )
+        return np.vstack([pts, support])
+
+    if pattern == "CRAWL_SHIFT":
+        shift = min(0.06 * phase, 0.45)
+        pts[:, 0] += shift * np.cos(fall_direction)
+        pts[:, 1] += shift * np.sin(fall_direction)
+        pts[:, 2] += child.normal(0.0, 0.035, len(pts))
+        return pts
+
+    return pts
+
 # ---------------------------------------------------------------------------
 # ObservationModel (internal implementation)
 # ---------------------------------------------------------------------------
@@ -151,6 +292,9 @@ class ObservationModel:
         self._bed_radius  = config.bed_radius
         self._rng         = rng
         self._client_id   = config.client_id
+        self._fall_motion_diversity = config.fall_motion_diversity
+        self._fall_motion_pattern = "NONE"
+        self._fall_direction = 0.0
 
     # ------------------------------------------------------------------
     # LiDAR point cloud generation
@@ -179,14 +323,33 @@ class ObservationModel:
 
         parts = []
 
-        # ABNORMAL phase 1: splatter pattern
+        # ABNORMAL phase 1: splatter pattern / optional v2.x diverse impact patterns
         if ls.state == SemanticState.ABNORMAL and ls.abnormal_phase == 1:
-            splatter = _sample_ellipsoid(
-                (ox, oy, 0.15), _SPLATTER_AXES, _N_SPLATTER, rng, ns
-            )
-            splatter[:, 2] = np.clip(splatter[:, 2], 0.0, 0.5)
-            parts.append(splatter)
+            if self._fall_motion_diversity:
+                child = rng.spawn(1)[0]
+                self._fall_motion_pattern = str(child.choice([
+                    "STILL",
+                    "ROLL",
+                    "LIMB_MOVEMENT",
+                    "SIT_UP_ATTEMPT",
+                    "CRAWL_SHIFT",
+                ], p=[0.28, 0.22, 0.22, 0.18, 0.10]))
+                self._fall_direction = float(child.uniform(0.0, 2.0 * np.pi))
+                variant = _sample_fall_variant(ls, rng)
+                impact = _generate_abnormal_impact(ox, oy, variant, rng, ns)
+                impact = _rotate_xy(impact, self._fall_direction, (ox, oy))
+                impact[:, 2] = np.clip(impact[:, 2], 0.0, 1.3)
+                parts.append(impact)
+            else:
+                splatter = _sample_ellipsoid(
+                    (ox, oy, 0.15), _SPLATTER_AXES, _N_SPLATTER, rng, ns
+                )
+                splatter[:, 2] = np.clip(splatter[:, 2], 0.0, 0.5)
+                parts.append(splatter)
         else:
+            if ls.state != SemanticState.ABNORMAL:
+                self._fall_motion_pattern = "NONE"
+                self._fall_direction = 0.0
             # Normal body parts
             n_torso = _N_TORSO[posture]
             tc = _TORSO_CENTRE[posture]
@@ -210,12 +373,42 @@ class ObservationModel:
             )
             parts.append(legs)
 
+            if self._fall_motion_diversity and ls.state == SemanticState.ABNORMAL:
+                # Post-fall frames should not all look like a perfect flat pose.
+                # Add small variations such as curled limbs or attempted recovery.
+                child = rng.spawn(1)[0]
+                if child.random() < 0.45:
+                    raised = _sample_ellipsoid(
+                        (ox + child.normal(0.15, 0.15), oy + child.normal(0.0, 0.12), 0.55),
+                        (0.18, 0.14, 0.22), 20, child, ns * 0.7
+                    )
+                    parts.append(raised)
+                if child.random() < 0.35:
+                    side_shift = child.normal(0.0, 0.08, size=(len(parts[-1]), 2))
+                    parts[-1][:, :2] += side_shift
+
         # Background
         bg = rng.uniform(low=[0, 0, 0], high=[5, 5, 0.05],
                          size=(_N_BACKGROUND, 3))
         parts.append(bg.astype(np.float64))
 
         pts = np.vstack(parts)
+
+        if (
+            self._fall_motion_diversity
+            and ls.state == SemanticState.ABNORMAL
+            and ls.abnormal_phase >= 2
+        ):
+            pts = _apply_post_fall_motion(
+                pts,
+                ox,
+                oy,
+                self._fall_motion_pattern,
+                self._fall_direction,
+                ls.abnormal_phase,
+                rng,
+                ns,
+            )
 
         # Motion blur for WALKING
         if ls.state == SemanticState.WALKING:
