@@ -1,4 +1,4 @@
-# OTANI_TODO — fall-motion を v2.x に再導入するための書き換え手順
+# OTANI_TODO — fall-motion を `main` に統合するための書き換え手順
 
 対象: Git と Python の基礎がある人。むずかしい理論は不要。下の手順どおり直せば通ります。
 
@@ -90,7 +90,7 @@ def _generate_abnormal_impact(ox, oy, variant, rng, noise_scale):
 ```bash
 # 1) テスト実行（リポジトリ直下で）
 PYTHONPATH=. python -m pytest tests/ -q
-# 2) 全部緑になればOK。特に test_v1_compat が pass なら v1 互換が戻った証拠。
+# 2) 全部緑になればOK。加えて v1 互換の確認（下記）も通すこと。
 #    （赤なら「4. 詰まったら」を見る）
 git add -A && git commit -m "fall-motion: use child RNG (rng.spawn) to preserve v1 output"
 # 3) PR を作る
@@ -98,8 +98,13 @@ git push origin feature/fall-motion
 #    表示される GitHub の URL を開き、base=main で Pull Request を作成。
 ```
 
-合格条件（README_REINTEGRATION.md と同じ）: 全テスト緑（特に `test_v1_compat`）＋
-fall は LiDAR 系（即時検知）のみに影響。満たせば v2.x で歓迎。
+v1 互換の確認: v1 既定 config の出力が、固定された v1.0.0 の golden digest
+`30c0e2537a8c539edf7e218efa5a2489b93b1173a3042eb0bbf619fe94c567b8` と一致すること。
+以前あった `tests/test_v1_compat.py` は現在リポジトリに無いので、この検査は
+このブランチ上で作り直す必要がある（比較先は tag `v1.0.0` = `f74a061`。凍結物なので変更禁止）。
+
+合格条件（README_REINTEGRATION.md と同じ）: 全テスト緑＋上の digest 一致＋
+fall は LiDAR 系（即時検知）のみに影響。満たせば `main` に統合。
 
 ---
 
@@ -108,6 +113,6 @@ fall は LiDAR 系（即時検知）のみに影響。満たせば v2.x で歓�
   最初に到達する直前」。ABNORMAL 専用の呼び出しは ABNORMAL 分岐の中で作る。
 - **どの行が「新規」でどれが「既存」か自信がない**とき（触っていい行の判定）。
   `git diff 0469ac3^..0469ac3 -- <ファイル>` の `+` 行が新規です。
-- **`test_v1_compat` だけ赤が残る**とき。親 `rng` を消費する呼び出しが1つ置換漏れしています。
+- **golden digest が一致しない**とき。親 `rng` を消費する呼び出しが1つ置換漏れしています。
   上の「触らない/触る」リストと突き合わせてください。
 - **`spawn` が無いと言われた**とき（古い numpy）。`pip install -U numpy`（1.25以上が必要）。
