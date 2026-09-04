@@ -165,13 +165,14 @@ def _rotate_xy(
 
 def _sample_fall_variant(ls: LatentState, rng: np.random.Generator) -> str:
     """Choose a fall geometry variant for the current abnormal event."""
+    child = rng.spawn(1)[0]
     variants, weights = _FALL_VARIANT_WEIGHTS.get(
         ls.abnormal_type,
         _FALL_VARIANT_WEIGHTS[AbnormalType.FALL],
     )
     probs = np.array(weights, dtype=np.float64)
     probs /= probs.sum()
-    return variants[int(rng.choice(len(variants), p=probs))]
+    return variants[int(child.choice(len(variants), p=probs))]
 
 def _generate_abnormal_impact(
     ox: float,
@@ -185,138 +186,87 @@ def _generate_abnormal_impact(
     The variants intentionally avoid a single z_mean/z_std signature. Most
     points still remain near the floor so the event is plausible as a fall.
     """
+    child = rng.spawn(1)[0]
+
     if variant == "hard_floor":
-        pts = _sample_ellipsoid((ox, oy, 0.15), _SPLATTER_AXES, _N_SPLATTER, rng, noise_scale)
+        pts = _sample_ellipsoid((ox, oy, 0.15), _SPLATTER_AXES, _N_SPLATTER, child, noise_scale)
         pts[:, 2] = np.clip(pts[:, 2], 0.0, 0.5)
         return pts
 
     if variant == "side_fall":
-        torso = _sample_ellipsoid((ox, oy, 0.18), (0.75, 0.16, 0.12), 80, rng, noise_scale)
-        head = _sample_ellipsoid((ox + 0.55, oy + 0.05, 0.24), (0.12, 0.10, 0.10), 25, rng, noise_scale)
-        limbs = _sample_ellipsoid((ox - 0.45, oy - 0.10, 0.14), (0.45, 0.22, 0.08), 45, rng, noise_scale)
+        torso = _sample_ellipsoid((ox, oy, 0.18), (0.75, 0.16, 0.12), 80, child, noise_scale)
+        head = _sample_ellipsoid((ox + 0.55, oy + 0.05, 0.24), (0.12, 0.10, 0.10), 25, child, noise_scale)
+        limbs = _sample_ellipsoid((ox - 0.45, oy - 0.10, 0.14), (0.45, 0.22, 0.08), 45, child, noise_scale)
         return np.vstack([torso, head, limbs])
 
     if variant == "braced_fall":
-        floor_body = _sample_ellipsoid((ox, oy, 0.18), (0.55, 0.35, 0.11), 85, rng, noise_scale)
-        raised_arm = _sample_ellipsoid((ox + 0.35, oy + 0.20, 0.65), (0.14, 0.12, 0.28), 35, rng, noise_scale)
-        head = _sample_ellipsoid((ox - 0.25, oy, 0.38), (0.12, 0.10, 0.14), 25, rng, noise_scale)
+        floor_body = _sample_ellipsoid((ox, oy, 0.18), (0.55, 0.35, 0.11), 85, child, noise_scale)
+        raised_arm = _sample_ellipsoid((ox + 0.35, oy + 0.20, 0.65), (0.14, 0.12, 0.28), 35, child, noise_scale)
+        head = _sample_ellipsoid((ox - 0.25, oy, 0.38), (0.12, 0.10, 0.14), 25, child, noise_scale)
         return np.vstack([floor_body, raised_arm, head])
 
     if variant == "collapse":
-        lower = _sample_ellipsoid((ox, oy, 0.16), (0.45, 0.30, 0.10), 70, rng, noise_scale)
-        torso = _sample_ellipsoid((ox + 0.15, oy, 0.55), (0.25, 0.20, 0.30), 55, rng, noise_scale)
-        head = _sample_ellipsoid((ox + 0.25, oy + 0.05, 0.92), (0.12, 0.10, 0.12), 25, rng, noise_scale)
+        lower = _sample_ellipsoid((ox, oy, 0.16), (0.45, 0.30, 0.10), 70, child, noise_scale)
+        torso = _sample_ellipsoid((ox + 0.15, oy, 0.55), (0.25, 0.20, 0.30), 55, child, noise_scale)
+        head = _sample_ellipsoid((ox + 0.25, oy + 0.05, 0.92), (0.12, 0.10, 0.12), 25, child, noise_scale)
         return np.vstack([lower, torso, head])
 
-    floor = _sample_ellipsoid((ox, oy, 0.13), (0.50, 0.28, 0.08), 70, rng, noise_scale)
-    partial = _sample_ellipsoid((ox + 0.20, oy - 0.10, 0.32), (0.25, 0.18, 0.16), 25, rng, noise_scale)
+    floor = _sample_ellipsoid((ox, oy, 0.13), (0.50, 0.28, 0.08), 70, child, noise_scale)
+    partial = _sample_ellipsoid((ox + 0.20, oy - 0.10, 0.32), (0.25, 0.18, 0.16), 25, child, noise_scale)
     return np.vstack([floor, partial])
-
-def _apply_normal_hard_negative(
-    pts: np.ndarray,
-    action: str,
-    ox: float,
-    oy: float,
-    rng: np.random.Generator,
-    noise_scale: float,
-) -> np.ndarray:
-    """Make normal actions look fall-like without changing the label.
-
-    These are hard negatives: crouching, picking something up, lying on a bed,
-    quick sitting, or a near stumble that recovers.
-    """
-    pts = pts.copy()
-
-    if action == "pick_up":
-        upper_mask = pts[:, 2] > float(np.percentile(pts[:, 2], 50))
-        pts[upper_mask, 2] *= float(rng.uniform(0.45, 0.65))
-        pts[upper_mask, 0] += rng.normal(0.25, 0.10, upper_mask.sum())
-        reach = _sample_ellipsoid(
-            (ox + 0.45, oy + rng.normal(0.0, 0.12), 0.18),
-            (0.18, 0.12, 0.08), 25, rng, noise_scale * 0.8
-        )
-        return np.vstack([pts, reach])
-
-    if action == "crouch":
-        high_mask = pts[:, 2] > 0.35
-        pts[high_mask, 2] *= float(rng.uniform(0.45, 0.70))
-        pts[:, 0] += rng.normal(0.0, 0.06, len(pts))
-        pts[:, 1] += rng.normal(0.0, 0.06, len(pts))
-        return pts
-
-    if action == "lie_down":
-        body_mask = pts[:, 2] > 0.25
-        pts[body_mask, 2] *= float(rng.uniform(0.18, 0.35))
-        pts[body_mask, 0] += rng.normal(0.35, 0.18, body_mask.sum())
-        pts[body_mask, 1] += rng.normal(0.0, 0.10, body_mask.sum())
-        return pts
-
-    if action == "fast_sit":
-        upper_mask = pts[:, 2] > 0.55
-        pts[upper_mask, 2] *= float(rng.uniform(0.55, 0.75))
-        pts[upper_mask, 0] += rng.normal(0.18, 0.08, upper_mask.sum())
-        pts[:, 2] += rng.normal(0.0, 0.04, len(pts))
-        return pts
-
-    if action == "stumble_recover":
-        upper_mask = pts[:, 2] > float(np.median(pts[:, 2]))
-        pts[upper_mask, 0] += rng.normal(0.35, 0.10, upper_mask.sum())
-        pts[upper_mask, 1] += rng.normal(0.15, 0.10, upper_mask.sum())
-        pts[upper_mask, 2] *= float(rng.uniform(0.70, 0.90))
-        return pts
-
-    return pts
 
 def _apply_post_fall_motion(
     pts: np.ndarray,
-    ls: LatentState,
     ox: float,
     oy: float,
+    pattern: str,
+    fall_direction: float,
+    abnormal_phase: int,
     rng: np.random.Generator,
     noise_scale: float,
 ) -> np.ndarray:
     """Add phase-dependent post-fall movement diversity."""
-    pts = _rotate_xy(pts, ls.fall_direction, (ox, oy))
-    pattern = ls.motion_pattern
-    phase = max(1, ls.abnormal_phase)
+    child = rng.spawn(1)[0]
+    pts = _rotate_xy(pts, fall_direction, (ox, oy))
+    phase = max(1, abnormal_phase)
 
     if pattern == "STILL":
-        pts[:, :2] += rng.normal(0.0, 0.015, size=(len(pts), 2))
-        pts[:, 2] += rng.normal(0.0, 0.01, len(pts))
+        pts[:, :2] += child.normal(0.0, 0.015, size=(len(pts), 2))
+        pts[:, 2] += child.normal(0.0, 0.01, len(pts))
         return pts
 
     if pattern == "ROLL":
-        roll_angle = ls.fall_direction + 0.12 * phase
+        roll_angle = fall_direction + 0.12 * phase
         pts = _rotate_xy(pts, roll_angle, (ox, oy))
-        pts[:, 0] += 0.025 * phase * np.cos(ls.fall_direction)
-        pts[:, 1] += 0.025 * phase * np.sin(ls.fall_direction)
-        pts[:, 2] += rng.normal(0.0, 0.025, len(pts))
+        pts[:, 0] += 0.025 * phase * np.cos(fall_direction)
+        pts[:, 1] += 0.025 * phase * np.sin(fall_direction)
+        pts[:, 2] += child.normal(0.0, 0.025, len(pts))
         return pts
 
     if pattern == "LIMB_MOVEMENT":
         limb_mask = pts[:, 2] < float(np.percentile(pts[:, 2], 45))
-        pts[limb_mask, 0] += rng.normal(0.0, 0.12, limb_mask.sum())
-        pts[limb_mask, 1] += rng.normal(0.0, 0.12, limb_mask.sum())
-        pts[limb_mask, 2] += rng.normal(0.06, 0.04, limb_mask.sum())
+        pts[limb_mask, 0] += child.normal(0.0, 0.12, limb_mask.sum())
+        pts[limb_mask, 1] += child.normal(0.0, 0.12, limb_mask.sum())
+        pts[limb_mask, 2] += child.normal(0.06, 0.04, limb_mask.sum())
         return pts
 
     if pattern == "SIT_UP_ATTEMPT":
         upper_mask = pts[:, 2] > float(np.percentile(pts[:, 2], 65))
         lift = min(0.08 * phase, 0.55)
-        pts[upper_mask, 2] += lift + rng.normal(0.0, 0.04, upper_mask.sum())
-        pts[upper_mask, 0] += 0.05 * phase * np.cos(ls.fall_direction)
-        pts[upper_mask, 1] += 0.05 * phase * np.sin(ls.fall_direction)
+        pts[upper_mask, 2] += lift + child.normal(0.0, 0.04, upper_mask.sum())
+        pts[upper_mask, 0] += 0.05 * phase * np.cos(fall_direction)
+        pts[upper_mask, 1] += 0.05 * phase * np.sin(fall_direction)
         support = _sample_ellipsoid(
-            (ox + 0.25 * np.cos(ls.fall_direction), oy + 0.25 * np.sin(ls.fall_direction), 0.35),
-            (0.12, 0.10, 0.18), 18, rng, noise_scale * 0.8
+            (ox + 0.25 * np.cos(fall_direction), oy + 0.25 * np.sin(fall_direction), 0.35),
+            (0.12, 0.10, 0.18), 18, child, noise_scale * 0.8
         )
         return np.vstack([pts, support])
 
     if pattern == "CRAWL_SHIFT":
         shift = min(0.06 * phase, 0.45)
-        pts[:, 0] += shift * np.cos(ls.fall_direction)
-        pts[:, 1] += shift * np.sin(ls.fall_direction)
-        pts[:, 2] += rng.normal(0.0, 0.035, len(pts))
+        pts[:, 0] += shift * np.cos(fall_direction)
+        pts[:, 1] += shift * np.sin(fall_direction)
+        pts[:, 2] += child.normal(0.0, 0.035, len(pts))
         return pts
 
     return pts
@@ -343,6 +293,9 @@ class ObservationModel:
         self._bed_radius  = config.bed_radius
         self._rng         = rng
         self._client_id   = config.client_id
+        self._fall_motion_diversity = config.fall_motion_diversity
+        self._fall_motion_pattern = "NONE"
+        self._fall_direction = 0.0
 
     # ------------------------------------------------------------------
     # LiDAR point cloud generation
@@ -371,14 +324,33 @@ class ObservationModel:
 
         parts = []
 
-        # ABNORMAL phase 1: diverse impact patterns
+        # ABNORMAL phase 1: v1 splatter / optional diverse impact patterns
         if ls.state == SemanticState.ABNORMAL and ls.abnormal_phase == 1:
-            variant = _sample_fall_variant(ls, rng)
-            impact = _generate_abnormal_impact(ox, oy, variant, rng, ns)
-            impact = _rotate_xy(impact, ls.fall_direction, (ox, oy))
-            impact[:, 2] = np.clip(impact[:, 2], 0.0, 1.3)
-            parts.append(impact)
+            if self._fall_motion_diversity:
+                child = rng.spawn(1)[0]
+                self._fall_motion_pattern = str(child.choice([
+                    "STILL",
+                    "ROLL",
+                    "LIMB_MOVEMENT",
+                    "SIT_UP_ATTEMPT",
+                    "CRAWL_SHIFT",
+                ], p=[0.28, 0.22, 0.22, 0.18, 0.10]))
+                self._fall_direction = float(child.uniform(0.0, 2.0 * np.pi))
+                variant = _sample_fall_variant(ls, rng)
+                impact = _generate_abnormal_impact(ox, oy, variant, rng, ns)
+                impact = _rotate_xy(impact, self._fall_direction, (ox, oy))
+                impact[:, 2] = np.clip(impact[:, 2], 0.0, 1.3)
+                parts.append(impact)
+            else:
+                splatter = _sample_ellipsoid(
+                    (ox, oy, 0.15), _SPLATTER_AXES, _N_SPLATTER, rng, ns
+                )
+                splatter[:, 2] = np.clip(splatter[:, 2], 0.0, 0.5)
+                parts.append(splatter)
         else:
+            if ls.state != SemanticState.ABNORMAL:
+                self._fall_motion_pattern = "NONE"
+                self._fall_direction = 0.0
             # Normal body parts
             n_torso = _N_TORSO[posture]
             tc = _TORSO_CENTRE[posture]
@@ -402,17 +374,18 @@ class ObservationModel:
             )
             parts.append(legs)
 
-            if ls.state == SemanticState.ABNORMAL:
+            if self._fall_motion_diversity and ls.state == SemanticState.ABNORMAL:
                 # Post-fall frames should not all look like a perfect flat pose.
                 # Add small variations such as curled limbs or attempted recovery.
-                if rng.random() < 0.45:
+                child = rng.spawn(1)[0]
+                if child.random() < 0.45:
                     raised = _sample_ellipsoid(
-                        (ox + rng.normal(0.15, 0.15), oy + rng.normal(0.0, 0.12), 0.55),
-                        (0.18, 0.14, 0.22), 20, rng, ns * 0.7
+                        (ox + child.normal(0.15, 0.15), oy + child.normal(0.0, 0.12), 0.55),
+                        (0.18, 0.14, 0.22), 20, child, ns * 0.7
                     )
                     parts.append(raised)
-                if rng.random() < 0.35:
-                    side_shift = rng.normal(0.0, 0.08, size=(len(parts[-1]), 2))
+                if child.random() < 0.35:
+                    side_shift = child.normal(0.0, 0.08, size=(len(parts[-1]), 2))
                     parts[-1][:, :2] += side_shift
 
         # Background
@@ -422,8 +395,21 @@ class ObservationModel:
 
         pts = np.vstack(parts)
 
-        if ls.state == SemanticState.ABNORMAL and ls.abnormal_phase >= 2:
-            pts = _apply_post_fall_motion(pts, ls, ox, oy, rng, ns)
+        if (
+            self._fall_motion_diversity
+            and ls.state == SemanticState.ABNORMAL
+            and ls.abnormal_phase >= 2
+        ):
+            pts = _apply_post_fall_motion(
+                pts,
+                ox,
+                oy,
+                self._fall_motion_pattern,
+                self._fall_direction,
+                ls.abnormal_phase,
+                rng,
+                ns,
+            )
 
         # Motion blur for WALKING
         if ls.state == SemanticState.WALKING:
@@ -446,45 +432,6 @@ class ObservationModel:
             upper_mask = pts[:, 2] > z_median
             pts[upper_mask, 0] += lean_dx + rng.normal(0, 0.04, upper_mask.sum())
             pts[upper_mask, 1] += lean_dy + rng.normal(0, 0.04, upper_mask.sum())
-
-            # Some normal transitions are fall-like: bending, reaching, or
-            # sitting down quickly. This makes simple height thresholds less
-            # reliable without changing the label to ABNORMAL.
-            if rng.random() < 0.25:
-                lower_mask = pts[:, 2] > 0.45
-                pts[lower_mask, 2] *= float(rng.uniform(0.55, 0.80))
-                pts[lower_mask, 0] += rng.normal(0.10, 0.08, lower_mask.sum())
-                pts[lower_mask, 1] += rng.normal(0.00, 0.08, lower_mask.sum())
-            if rng.random() < 0.20:
-                action = str(rng.choice(["pick_up", "fast_sit", "stumble_recover"]))
-                pts = _apply_normal_hard_negative(pts, action, ox, oy, rng, ns)
-
-        if ls.state == SemanticState.STATIONARY and posture != Posture.LYING:
-            # Normal quiet actions such as leaning forward in a chair or
-            # reaching toward the floor. These create low-z normal examples.
-            if rng.random() < 0.12:
-                upper_mask = pts[:, 2] > float(np.percentile(pts[:, 2], 55))
-                pts[upper_mask, 2] *= float(rng.uniform(0.65, 0.88))
-                pts[upper_mask, 0] += rng.normal(0.12, 0.08, upper_mask.sum())
-            if rng.random() < 0.14:
-                action = str(rng.choice(["pick_up", "crouch", "fast_sit"]))
-                pts = _apply_normal_hard_negative(pts, action, ox, oy, rng, ns)
-
-        if ls.state == SemanticState.STATIONARY and posture == Posture.LYING:
-            # Lying down in bed or resting can look similar to a fall in a
-            # single frame, but temporal and pressure cues should separate it.
-            if rng.random() < 0.18:
-                pts = _apply_normal_hard_negative(pts, "lie_down", ox, oy, rng, ns)
-
-        if ls.state == SemanticState.WALKING:
-            # Facility clutter or sensor angle can hide part of the body during
-            # normal walking, making point count and z statistics less perfect.
-            if rng.random() < 0.10:
-                z_cut = float(np.percentile(pts[:, 2], rng.uniform(55, 75)))
-                keep = pts[:, 2] < z_cut
-                pts = pts[keep] if keep.any() else pts
-            if rng.random() < 0.08:
-                pts = _apply_normal_hard_negative(pts, "stumble_recover", ox, oy, rng, ns)
 
         # Occlusion
         pts = _apply_occlusion(pts, self._occlusion, rng)

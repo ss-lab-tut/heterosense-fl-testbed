@@ -64,8 +64,6 @@ class LatentState:
     abnormal_type:   AbnormalType
     bed_zone:        BedZone = BedZone.OFF_BED
     abnormal_phase:  int     = 0  # 0=not ABNORMAL, 1=impact, 2+=rest
-    motion_pattern:  str     = "NONE"
-    fall_direction:  float   = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -312,38 +310,11 @@ class BehaviorModel:
         x, y           = -1.0, -1.0
         posture        = Posture.UPRIGHT
         abnormal_steps = 0   # consecutive ABNORMAL steps
-        abnormal_target = 0  # sampled duration of current ABNORMAL episode
-        abnormal_motion_pattern = "NONE"
-        abnormal_fall_direction = 0.0
         transition_steps  = 0  # steps spent in current TRANSITION episode
         transition_target = 0  # sampled duration of current TRANSITION episode
 
         for t in range(n_steps):
             next_state = self._sample_next_state(current_state)
-            if current_state != SemanticState.ABNORMAL and next_state == SemanticState.ABNORMAL:
-                mode = float(self.rng.random())
-                if mode < 0.15:
-                    abnormal_target = int(self.rng.integers(2, 4))    # near fall
-                elif mode < 0.85:
-                    abnormal_target = int(self.rng.integers(5, 11))   # fall + early post-fall
-                else:
-                    abnormal_target = int(self.rng.integers(12, 25))  # prolonged immobility
-                abnormal_motion_pattern = str(self.rng.choice([
-                    "STILL",
-                    "ROLL",
-                    "LIMB_MOVEMENT",
-                    "SIT_UP_ATTEMPT",
-                    "CRAWL_SHIFT",
-                ], p=[0.28, 0.22, 0.22, 0.18, 0.10]))
-                abnormal_fall_direction = float(self.rng.uniform(0.0, 2.0 * np.pi))
-            if current_state == SemanticState.ABNORMAL:
-                if abnormal_steps < abnormal_target:
-                    next_state = SemanticState.ABNORMAL
-                elif next_state != SemanticState.ABNORMAL:
-                    abnormal_target = 0
-                    abnormal_motion_pattern = "NONE"
-                    abnormal_fall_direction = 0.0
-
             # Variable-length TRANSITION: sample duration on entry, enforce it
             if current_state != SemanticState.TRANSITION and next_state == SemanticState.TRANSITION:
                 # Sample TRANSITION duration [2, 6] steps at entry
@@ -368,15 +339,11 @@ class BehaviorModel:
                 abnormal_steps = 0
             ab_phase  = abnormal_steps if next_state == SemanticState.ABNORMAL else 0
             ab_type   = self._get_abnormal_type(next_state, ab_phase)
-            motion_pattern = abnormal_motion_pattern if next_state == SemanticState.ABNORMAL else "NONE"
-            fall_direction = abnormal_fall_direction if next_state == SemanticState.ABNORMAL else 0.0
 
             result.append(LatentState(
                 t=t, state=next_state, x=x, y=y, velocity=velocity,
                 posture=posture, abnormal_type=ab_type,
                 bed_zone=bed_zone, abnormal_phase=ab_phase,
-                motion_pattern=motion_pattern,
-                fall_direction=fall_direction,
             ))
             current_state = next_state
 

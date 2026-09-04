@@ -2,6 +2,15 @@
 
 All notable changes to HeteroSense-FL are documented here.
 
+## [Unreleased]
+
+### Added
+- Opt-in `fall_motion_diversity` LiDAR variants using isolated child RNGs
+- Portable v1 compatibility and parent-RNG isolation regression tests
+
+### Compatibility
+- `fall_motion_diversity` defaults to `False`; the v1 default path is unchanged
+
 ## [1.0.0] — 2026-01-01
 
 ### Added

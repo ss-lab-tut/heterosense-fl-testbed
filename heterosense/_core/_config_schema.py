@@ -108,6 +108,8 @@ class ClientConfig:
     lidar_motion_gain    : alpha_m  -- client sensitivity for motion channel
     lidar_floor_gain     : alpha_f  -- client sensitivity for floor-proximity channel
     lidar_occlusion      : fraction of LiDAR signal lost due to occlusion (range 0 to 1)
+    fall_motion_diversity: enables v2.x LiDAR fall-motion variants while leaving
+                           the default v1-compatible output unchanged
 
     Bed-specific
     ~~~~~~~~~~~~
@@ -133,6 +135,7 @@ class ClientConfig:
     lidar_motion_gain:   float = 1.0
     lidar_floor_gain:    float = 1.0
     lidar_occlusion:     float = 0.0   # (range 0 to 1)
+    fall_motion_diversity: bool = False
 
     # Bed gains (client heterogeneity)
     bed_pressure_gain:   float = 1.0
@@ -186,6 +189,7 @@ class ClientConfig:
             lidar_motion_gain=float(d.get("lidar_motion_gain", 1.0)),
             lidar_floor_gain=float(d.get("lidar_floor_gain",  1.0)),
             lidar_occlusion=float(d.get("lidar_occlusion", 0.0)),
+            fall_motion_diversity=bool(d.get("fall_motion_diversity", False)),
             bed_pressure_gain=float(d.get("bed_pressure_gain", 1.0)),
             bed_edge_sensitivity=float(d.get("bed_edge_sensitivity", 0.8)),
             bed_position=(float(bp[0]), float(bp[1])),

@@ -36,6 +36,23 @@ Gaussian priors designed to reflect indoor sensing structure; they are not calib
 hardware specifications. The software is intended for systematic algorithm comparison under
 reproducible, configurable heterogeneity conditions — not for deployment-ready sensor emulation.
 
+### Opt-in fall-motion diversity
+
+The v1 fall geometry remains the default for backward compatibility. Enable the
+v2.x LiDAR fall variants explicitly when building clients:
+
+```python
+clients = ClientFactory.make(
+    3,
+    strategy="round_robin",
+    base_overrides={"fall_motion_diversity": True},
+)
+```
+
+The added fall randomness uses dedicated child generators and does not advance
+the simulator's shared parent RNG. Normal v1 output is unchanged when the option
+is omitted or set to `False`.
+
 ## Installation
 
 **From PyPI (recommended for users):**
