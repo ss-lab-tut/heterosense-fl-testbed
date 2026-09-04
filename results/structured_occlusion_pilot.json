@@ -1,0 +1,222 @@
+{
+  "status": "provisional_simulation_pilot",
+  "environment": {
+    "python": "3.14.3",
+    "numpy": "2.5.2"
+  },
+  "research_question": "Can observable statistics identify degradation caused by an unseen structured occluder geometry on an unseen trajectory seed?",
+  "structured_occlusion": "deterministic 2.5-D LiDAR-to-point ray/rectangle intersection",
+  "input_features": [
+    "lidar_available",
+    "pressure_available",
+    "lidar_baseline_available",
+    "pressure_baseline_available",
+    "point_count",
+    "point_count_ratio",
+    "z_mean",
+    "z_std",
+    "z_q10",
+    "z_q50",
+    "z_q90",
+    "z_mean_delta",
+    "z_std_delta",
+    "floor02_ratio",
+    "floor04_ratio",
+    "x_std",
+    "y_std",
+    "xy_spread",
+    "pressure_sum",
+    "pressure_mean",
+    "pressure_std",
+    "pressure_max",
+    "pressure_active_ratio",
+    "pressure_sum_delta"
+  ],
+  "prohibited_inputs_used": false,
+  "target_definition": "paired point-loss ratio >= 0.1",
+  "split": "held-out trajectory seed and held-out occluder geometry",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "geometries": [
+    "vertical_near",
+    "vertical_mid",
+    "horizontal_near",
+    "horizontal_mid",
+    "central_furniture"
+  ],
+  "n_steps": 800,
+  "calibration_steps": 100,
+  "folds": [
+    {
+      "held_out_seed": 0,
+      "held_out_geometry": "vertical_near",
+      "degraded_prevalence": 0.42428571428571427,
+      "mean_point_loss_when_affected": 0.9416505362828893,
+      "feature_sets": {
+        "all_observable_features": {
+          "degraded_recall": 0.9494949494949495,
+          "false_positive_rate": 0.1600496277915633,
+          "balanced_accuracy": 0.894722660851693
+        },
+        "without_point_count": {
+          "degraded_recall": 0.9057239057239057,
+          "false_positive_rate": 0.1600496277915633,
+          "balanced_accuracy": 0.8728371389661712
+        },
+        "lidar_shape_only": {
+          "degraded_recall": 0.9057239057239057,
+          "false_positive_rate": 0.1600496277915633,
+          "balanced_accuracy": 0.8728371389661712
+        }
+      }
+    },
+    {
+      "held_out_seed": 1,
+      "held_out_geometry": "vertical_mid",
+      "degraded_prevalence": 0.44571428571428573,
+      "mean_point_loss_when_affected": 0.8687093739122869,
+      "feature_sets": {
+        "all_observable_features": {
+          "degraded_recall": 0.8541666666666666,
+          "false_positive_rate": 0.14690721649484537,
+          "balanced_accuracy": 0.8536297250859106
+        },
+        "without_point_count": {
+          "degraded_recall": 0.8301282051282052,
+          "false_positive_rate": 0.14690721649484537,
+          "balanced_accuracy": 0.84161049431668
+        },
+        "lidar_shape_only": {
+          "degraded_recall": 0.8285256410256411,
+          "false_positive_rate": 0.14690721649484537,
+          "balanced_accuracy": 0.8408092122653978
+        }
+      }
+    },
+    {
+      "held_out_seed": 2,
+      "held_out_geometry": "horizontal_near",
+      "degraded_prevalence": 0.5,
+      "mean_point_loss_when_affected": 0.9847361048265462,
+      "feature_sets": {
+        "all_observable_features": {
+          "degraded_recall": 1.0,
+          "false_positive_rate": 0.16285714285714287,
+          "balanced_accuracy": 0.9185714285714286
+        },
+        "without_point_count": {
+          "degraded_recall": 1.0,
+          "false_positive_rate": 0.16285714285714287,
+          "balanced_accuracy": 0.9185714285714286
+        },
+        "lidar_shape_only": {
+          "degraded_recall": 0.9385714285714286,
+          "false_positive_rate": 0.16285714285714287,
+          "balanced_accuracy": 0.8878571428571429
+        }
+      }
+    },
+    {
+      "held_out_seed": 3,
+      "held_out_geometry": "horizontal_mid",
+      "degraded_prevalence": 0.04642857142857143,
+      "mean_point_loss_when_affected": 0.5961059577677225,
+      "feature_sets": {
+        "all_observable_features": {
+          "degraded_recall": 0.46153846153846156,
+          "false_positive_rate": 0.15355805243445692,
+          "balanced_accuracy": 0.6539902045520024
+        },
+        "without_point_count": {
+          "degraded_recall": 0.35384615384615387,
+          "false_positive_rate": 0.15355805243445692,
+          "balanced_accuracy": 0.6001440507058485
+        },
+        "lidar_shape_only": {
+          "degraded_recall": 0.35384615384615387,
+          "false_positive_rate": 0.15355805243445692,
+          "balanced_accuracy": 0.6001440507058485
+        }
+      }
+    },
+    {
+      "held_out_seed": 4,
+      "held_out_geometry": "central_furniture",
+      "degraded_prevalence": 0.06357142857142857,
+      "mean_point_loss_when_affected": 0.47186996881725896,
+      "feature_sets": {
+        "all_observable_features": {
+          "degraded_recall": 0.10112359550561797,
+          "false_positive_rate": 0.2143401983218917,
+          "balanced_accuracy": 0.44339169859186317
+        },
+        "without_point_count": {
+          "degraded_recall": 0.10112359550561797,
+          "false_positive_rate": 0.2143401983218917,
+          "balanced_accuracy": 0.44339169859186317
+        },
+        "lidar_shape_only": {
+          "degraded_recall": 0.10112359550561797,
+          "false_positive_rate": 0.2143401983218917,
+          "balanced_accuracy": 0.44339169859186317
+        }
+      }
+    }
+  ],
+  "summary": {
+    "all_observable_features": {
+      "balanced_accuracy": {
+        "mean": 0.7528611435305795,
+        "std": 0.2020431238738553
+      },
+      "degraded_recall": {
+        "mean": 0.6732647346411391,
+        "std": 0.38339212043647863
+      },
+      "false_positive_rate": {
+        "mean": 0.16754244757998002,
+        "std": 0.02687703467996731
+      }
+    },
+    "without_point_count": {
+      "balanced_accuracy": {
+        "mean": 0.7353109622303984,
+        "std": 0.20450207137533072
+      },
+      "degraded_recall": {
+        "mean": 0.6381643720407766,
+        "std": 0.39006822601881086
+      },
+      "false_positive_rate": {
+        "mean": 0.16754244757998002,
+        "std": 0.02687703467996731
+      }
+    },
+    "lidar_shape_only": {
+      "balanced_accuracy": {
+        "mean": 0.7290078486772847,
+        "std": 0.19786483487714948
+      },
+      "degraded_recall": {
+        "mean": 0.6255581449345494,
+        "std": 0.3763392673032055
+      },
+      "false_positive_rate": {
+        "mean": 0.16754244757998002,
+        "std": 0.02687703467996731
+      }
+    }
+  },
+  "limitations": [
+    "The target uses paired simulator output and is never an estimator input.",
+    "The ray model is 2.5-D because LiDAR mounting height is not configured.",
+    "Axis-aligned rectangles do not yet represent arbitrary wall angles.",
+    "Results are provisional until compared with real LiDAR point clouds.",
+    "The recorded environment uses Python 3.14, outside listed classifiers."
+  ]
+}

@@ -21,7 +21,7 @@ except PackageNotFoundError:
     __version__ = m.group(1) if m else "unknown"
 
 # Public API
-from heterosense._core._config_schema import SimConfig, ClientConfig
+from heterosense._core._config_schema import SimConfig, ClientConfig, OccluderConfig
 from heterosense._core._config_manager import ConfigurationManager
 from heterosense._core._behavior_model import (
     BehaviorModel, LatentState, SemanticState, Posture, BedZone, AbnormalType,
@@ -63,5 +63,6 @@ __all__ = [
     "AbnormalType",
     "SimConfig",
     "ClientConfig",
+    "OccluderConfig",
     "__version__",
 ]

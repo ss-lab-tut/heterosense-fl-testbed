@@ -92,6 +92,42 @@ class PerturbationConfig:
         )
 
 
+@dataclass(frozen=True)
+class OccluderConfig:
+    """Axis-aligned 2.5-D obstacle used for deterministic line-of-sight masking.
+
+    The rectangle is the obstacle footprint in room coordinates. ``height`` is
+    the highest point-cloud z value blocked by the obstacle.
+    """
+
+    name: str
+    x_min: float
+    x_max: float
+    y_min: float
+    y_max: float
+    height: float = 2.5
+
+    def __post_init__(self) -> None:
+        if not self.name.strip():
+            raise ValueError("occluder name must not be empty")
+        if self.x_min >= self.x_max:
+            raise ValueError(f"occluder {self.name}: x_min must be < x_max")
+        if self.y_min >= self.y_max:
+            raise ValueError(f"occluder {self.name}: y_min must be < y_max")
+        _require_positive(self.height, f"occluder {self.name}: height")
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "OccluderConfig":
+        return cls(
+            name=str(d.get("name", "occluder")),
+            x_min=float(d["x_min"]),
+            x_max=float(d["x_max"]),
+            y_min=float(d["y_min"]),
+            y_max=float(d["y_max"]),
+            height=float(d.get("height", 2.5)),
+        )
+
+
 @dataclass
 class ClientConfig:
     """Per-client configuration (v1.0).
@@ -133,6 +169,7 @@ class ClientConfig:
     lidar_motion_gain:   float = 1.0
     lidar_floor_gain:    float = 1.0
     lidar_occlusion:     float = 0.0   # (range 0 to 1)
+    lidar_occluders:     tuple[OccluderConfig, ...] = ()
 
     # Bed gains (client heterogeneity)
     bed_pressure_gain:   float = 1.0
@@ -186,6 +223,10 @@ class ClientConfig:
             lidar_motion_gain=float(d.get("lidar_motion_gain", 1.0)),
             lidar_floor_gain=float(d.get("lidar_floor_gain",  1.0)),
             lidar_occlusion=float(d.get("lidar_occlusion", 0.0)),
+            lidar_occluders=tuple(
+                OccluderConfig.from_dict(item)
+                for item in d.get("lidar_occluders", [])
+            ),
             bed_pressure_gain=float(d.get("bed_pressure_gain", 1.0)),
             bed_edge_sensitivity=float(d.get("bed_edge_sensitivity", 0.8)),
             bed_position=(float(bp[0]), float(bp[1])),

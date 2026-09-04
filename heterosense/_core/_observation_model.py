@@ -9,7 +9,7 @@ import numpy as np
 from heterosense._core._behavior_model import (
     LatentState, SemanticState, Posture, BedZone,
 )
-from heterosense._core._config_schema import ClientConfig
+from heterosense._core._config_schema import ClientConfig, OccluderConfig
 
 # ---------------------------------------------------------------------------
 # Constants: point cloud
@@ -129,6 +129,61 @@ def _apply_occlusion(
     keep = rng.random(len(pts)) > occlusion
     return pts[keep] if keep.any() else pts[:1]
 
+
+def _apply_structured_occlusion(
+    pts: np.ndarray,
+    sensor_xy: tuple[float, float],
+    occluders: tuple[OccluderConfig, ...],
+) -> np.ndarray:
+    """Remove points hidden behind configured rectangular obstacles.
+
+    A point is blocked when the 2-D segment from the LiDAR to that point enters
+    an occluder footprint before reaching the point and its z value is no higher
+    than the obstacle. The operation is deterministic and consumes no RNG.
+
+    This is a 2.5-D approximation: the ray height itself is not modeled because
+    the current configuration stores LiDAR x/y but not mounting height.
+    """
+    if not occluders or len(pts) == 0:
+        return pts
+
+    sx, sy = sensor_xy
+    dx = pts[:, 0] - sx
+    dy = pts[:, 1] - sy
+    blocked = np.zeros(len(pts), dtype=bool)
+    epsilon = 1e-12
+
+    for obstacle in occluders:
+        parallel_x = np.abs(dx) < epsilon
+        parallel_y = np.abs(dy) < epsilon
+
+        safe_dx = np.where(parallel_x, 1.0, dx)
+        safe_dy = np.where(parallel_y, 1.0, dy)
+        tx_a = (obstacle.x_min - sx) / safe_dx
+        tx_b = (obstacle.x_max - sx) / safe_dx
+        ty_a = (obstacle.y_min - sy) / safe_dy
+        ty_b = (obstacle.y_max - sy) / safe_dy
+
+        enter_x = np.where(parallel_x, -np.inf, np.minimum(tx_a, tx_b))
+        exit_x = np.where(parallel_x, np.inf, np.maximum(tx_a, tx_b))
+        enter_y = np.where(parallel_y, -np.inf, np.minimum(ty_a, ty_b))
+        exit_y = np.where(parallel_y, np.inf, np.maximum(ty_a, ty_b))
+
+        outside_parallel_axis = (
+            (parallel_x & ((sx < obstacle.x_min) | (sx > obstacle.x_max)))
+            | (parallel_y & ((sy < obstacle.y_min) | (sy > obstacle.y_max)))
+        )
+        enter = np.maximum.reduce([enter_x, enter_y, np.zeros(len(pts))])
+        exit_ = np.minimum.reduce([
+            exit_x,
+            exit_y,
+            np.full(len(pts), 1.0 - epsilon),
+        ])
+        intersects_before_point = (~outside_parallel_axis) & (enter <= exit_)
+        blocked |= intersects_before_point & (pts[:, 2] <= obstacle.height)
+
+    return pts[~blocked]
+
 # ---------------------------------------------------------------------------
 # ObservationModel (internal implementation)
 # ---------------------------------------------------------------------------
@@ -147,6 +202,8 @@ class ObservationModel:
         self._has_bed     = config.has_channel('bed')
         self._noise       = config.sensor_noise_level
         self._occlusion   = config.lidar_occlusion
+        self._occluders   = config.lidar_occluders
+        self._lidar_xy    = config.lidar_position
         self._bed_pos     = config.bed_position      # (bx, by) centre
         self._bed_radius  = config.bed_radius
         self._rng         = rng
@@ -239,7 +296,8 @@ class ObservationModel:
             pts[upper_mask, 0] += lean_dx + rng.normal(0, 0.04, upper_mask.sum())
             pts[upper_mask, 1] += lean_dy + rng.normal(0, 0.04, upper_mask.sum())
 
-        # Occlusion
+        # Geometry-dependent occlusion first; legacy random point drop second.
+        pts = _apply_structured_occlusion(pts, self._lidar_xy, self._occluders)
         pts = _apply_occlusion(pts, self._occlusion, rng)
 
         # Clip to room boundaries (z >= 0)
