@@ -35,6 +35,11 @@ from heterosense.observation_statistics import (
     ObservationBaseline,
     ObservationStatisticsExtractor,
 )
+from heterosense.condition_estimator import (
+    ObservableConditionEstimator,
+    balanced_accuracy,
+    confusion_counts,
+)
 from heterosense.validation import run_validation
 
 __all__ = [
@@ -45,6 +50,9 @@ __all__ = [
     "FEATURE_NAMES",
     "ObservationBaseline",
     "ObservationStatisticsExtractor",
+    "ObservableConditionEstimator",
+    "balanced_accuracy",
+    "confusion_counts",
     "ModalityBundle",
     "run_validation",
     "BehaviorModel",

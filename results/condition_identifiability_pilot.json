@@ -1,0 +1,538 @@
+{
+  "status": "provisional_simulation_pilot",
+  "environment": {
+    "python": "3.14.3",
+    "numpy": "2.5.2"
+  },
+  "research_question": "Are sensor availability and LiDAR occlusion identifiable from observable statistics on an unseen trajectory seed?",
+  "input_features": [
+    "lidar_available",
+    "pressure_available",
+    "lidar_baseline_available",
+    "pressure_baseline_available",
+    "point_count",
+    "point_count_ratio",
+    "z_mean",
+    "z_std",
+    "z_q10",
+    "z_q50",
+    "z_q90",
+    "z_mean_delta",
+    "z_std_delta",
+    "floor02_ratio",
+    "floor04_ratio",
+    "x_std",
+    "y_std",
+    "xy_spread",
+    "pressure_sum",
+    "pressure_mean",
+    "pressure_std",
+    "pressure_max",
+    "pressure_active_ratio",
+    "pressure_sum_delta"
+  ],
+  "occlusion_feature_sets": {
+    "all_observable_features": [
+      "lidar_available",
+      "pressure_available",
+      "lidar_baseline_available",
+      "pressure_baseline_available",
+      "point_count",
+      "point_count_ratio",
+      "z_mean",
+      "z_std",
+      "z_q10",
+      "z_q50",
+      "z_q90",
+      "z_mean_delta",
+      "z_std_delta",
+      "floor02_ratio",
+      "floor04_ratio",
+      "x_std",
+      "y_std",
+      "xy_spread",
+      "pressure_sum",
+      "pressure_mean",
+      "pressure_std",
+      "pressure_max",
+      "pressure_active_ratio",
+      "pressure_sum_delta"
+    ],
+    "without_point_count": [
+      "lidar_available",
+      "pressure_available",
+      "lidar_baseline_available",
+      "pressure_baseline_available",
+      "z_mean",
+      "z_std",
+      "z_q10",
+      "z_q50",
+      "z_q90",
+      "z_mean_delta",
+      "z_std_delta",
+      "floor02_ratio",
+      "floor04_ratio",
+      "x_std",
+      "y_std",
+      "xy_spread",
+      "pressure_sum",
+      "pressure_mean",
+      "pressure_std",
+      "pressure_max",
+      "pressure_active_ratio",
+      "pressure_sum_delta"
+    ],
+    "lidar_shape_only": [
+      "z_mean",
+      "z_std",
+      "z_q10",
+      "z_q50",
+      "z_q90",
+      "z_mean_delta",
+      "z_std_delta",
+      "floor02_ratio",
+      "floor04_ratio",
+      "x_std",
+      "y_std",
+      "xy_spread"
+    ]
+  },
+  "prohibited_inputs_used": false,
+  "split": "leave-one-seed-out",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "n_steps_per_profile": 800,
+  "calibration_steps_per_profile": 100,
+  "profiles": [
+    {
+      "name": "both_clear",
+      "availability": "both",
+      "occlusion": "clear",
+      "channels": [
+        "lidar",
+        "bed"
+      ],
+      "lidar_occlusion": 0.0
+    },
+    {
+      "name": "both_occluded",
+      "availability": "both",
+      "occlusion": "occluded",
+      "channels": [
+        "lidar",
+        "bed"
+      ],
+      "lidar_occlusion": 0.45
+    },
+    {
+      "name": "lidar_clear",
+      "availability": "lidar_only",
+      "occlusion": "clear",
+      "channels": [
+        "lidar"
+      ],
+      "lidar_occlusion": 0.0
+    },
+    {
+      "name": "lidar_occluded",
+      "availability": "lidar_only",
+      "occlusion": "occluded",
+      "channels": [
+        "lidar"
+      ],
+      "lidar_occlusion": 0.45
+    },
+    {
+      "name": "pressure_only",
+      "availability": "pressure_only",
+      "occlusion": null,
+      "channels": [
+        "bed"
+      ],
+      "lidar_occlusion": 0.0
+    }
+  ],
+  "folds": [
+    {
+      "held_out_seed": 0,
+      "availability_balanced_accuracy": 1.0,
+      "occlusion_balanced_accuracy": 1.0,
+      "occlusion_feature_ablation": {
+        "all_observable_features": 1.0,
+        "without_point_count": 0.5246428571428571,
+        "lidar_shape_only": 0.5275000000000001
+      },
+      "availability_confusion": {
+        "both": {
+          "both": 1400,
+          "lidar_only": 0,
+          "pressure_only": 0
+        },
+        "lidar_only": {
+          "both": 0,
+          "lidar_only": 1400,
+          "pressure_only": 0
+        },
+        "pressure_only": {
+          "both": 0,
+          "lidar_only": 0,
+          "pressure_only": 700
+        }
+      },
+      "occlusion_confusion": {
+        "clear": {
+          "clear": 1400,
+          "occluded": 0
+        },
+        "occluded": {
+          "clear": 0,
+          "occluded": 1400
+        }
+      },
+      "occlusion_ablation_confusions": {
+        "all_observable_features": {
+          "clear": {
+            "clear": 1400,
+            "occluded": 0
+          },
+          "occluded": {
+            "clear": 0,
+            "occluded": 1400
+          }
+        },
+        "without_point_count": {
+          "clear": {
+            "clear": 791,
+            "occluded": 609
+          },
+          "occluded": {
+            "clear": 722,
+            "occluded": 678
+          }
+        },
+        "lidar_shape_only": {
+          "clear": {
+            "clear": 796,
+            "occluded": 604
+          },
+          "occluded": {
+            "clear": 719,
+            "occluded": 681
+          }
+        }
+      }
+    },
+    {
+      "held_out_seed": 1,
+      "availability_balanced_accuracy": 1.0,
+      "occlusion_balanced_accuracy": 1.0,
+      "occlusion_feature_ablation": {
+        "all_observable_features": 1.0,
+        "without_point_count": 0.5107142857142857,
+        "lidar_shape_only": 0.5117857142857143
+      },
+      "availability_confusion": {
+        "both": {
+          "both": 1400,
+          "lidar_only": 0,
+          "pressure_only": 0
+        },
+        "lidar_only": {
+          "both": 0,
+          "lidar_only": 1400,
+          "pressure_only": 0
+        },
+        "pressure_only": {
+          "both": 0,
+          "lidar_only": 0,
+          "pressure_only": 700
+        }
+      },
+      "occlusion_confusion": {
+        "clear": {
+          "clear": 1400,
+          "occluded": 0
+        },
+        "occluded": {
+          "clear": 0,
+          "occluded": 1400
+        }
+      },
+      "occlusion_ablation_confusions": {
+        "all_observable_features": {
+          "clear": {
+            "clear": 1400,
+            "occluded": 0
+          },
+          "occluded": {
+            "clear": 0,
+            "occluded": 1400
+          }
+        },
+        "without_point_count": {
+          "clear": {
+            "clear": 658,
+            "occluded": 742
+          },
+          "occluded": {
+            "clear": 628,
+            "occluded": 772
+          }
+        },
+        "lidar_shape_only": {
+          "clear": {
+            "clear": 661,
+            "occluded": 739
+          },
+          "occluded": {
+            "clear": 628,
+            "occluded": 772
+          }
+        }
+      }
+    },
+    {
+      "held_out_seed": 2,
+      "availability_balanced_accuracy": 1.0,
+      "occlusion_balanced_accuracy": 1.0,
+      "occlusion_feature_ablation": {
+        "all_observable_features": 1.0,
+        "without_point_count": 0.5496428571428572,
+        "lidar_shape_only": 0.5503571428571429
+      },
+      "availability_confusion": {
+        "both": {
+          "both": 1400,
+          "lidar_only": 0,
+          "pressure_only": 0
+        },
+        "lidar_only": {
+          "both": 0,
+          "lidar_only": 1400,
+          "pressure_only": 0
+        },
+        "pressure_only": {
+          "both": 0,
+          "lidar_only": 0,
+          "pressure_only": 700
+        }
+      },
+      "occlusion_confusion": {
+        "clear": {
+          "clear": 1400,
+          "occluded": 0
+        },
+        "occluded": {
+          "clear": 0,
+          "occluded": 1400
+        }
+      },
+      "occlusion_ablation_confusions": {
+        "all_observable_features": {
+          "clear": {
+            "clear": 1400,
+            "occluded": 0
+          },
+          "occluded": {
+            "clear": 0,
+            "occluded": 1400
+          }
+        },
+        "without_point_count": {
+          "clear": {
+            "clear": 985,
+            "occluded": 415
+          },
+          "occluded": {
+            "clear": 846,
+            "occluded": 554
+          }
+        },
+        "lidar_shape_only": {
+          "clear": {
+            "clear": 987,
+            "occluded": 413
+          },
+          "occluded": {
+            "clear": 846,
+            "occluded": 554
+          }
+        }
+      }
+    },
+    {
+      "held_out_seed": 3,
+      "availability_balanced_accuracy": 1.0,
+      "occlusion_balanced_accuracy": 1.0,
+      "occlusion_feature_ablation": {
+        "all_observable_features": 1.0,
+        "without_point_count": 0.47928571428571426,
+        "lidar_shape_only": 0.47785714285714287
+      },
+      "availability_confusion": {
+        "both": {
+          "both": 1400,
+          "lidar_only": 0,
+          "pressure_only": 0
+        },
+        "lidar_only": {
+          "both": 0,
+          "lidar_only": 1400,
+          "pressure_only": 0
+        },
+        "pressure_only": {
+          "both": 0,
+          "lidar_only": 0,
+          "pressure_only": 700
+        }
+      },
+      "occlusion_confusion": {
+        "clear": {
+          "clear": 1400,
+          "occluded": 0
+        },
+        "occluded": {
+          "clear": 0,
+          "occluded": 1400
+        }
+      },
+      "occlusion_ablation_confusions": {
+        "all_observable_features": {
+          "clear": {
+            "clear": 1400,
+            "occluded": 0
+          },
+          "occluded": {
+            "clear": 0,
+            "occluded": 1400
+          }
+        },
+        "without_point_count": {
+          "clear": {
+            "clear": 395,
+            "occluded": 1005
+          },
+          "occluded": {
+            "clear": 453,
+            "occluded": 947
+          }
+        },
+        "lidar_shape_only": {
+          "clear": {
+            "clear": 391,
+            "occluded": 1009
+          },
+          "occluded": {
+            "clear": 453,
+            "occluded": 947
+          }
+        }
+      }
+    },
+    {
+      "held_out_seed": 4,
+      "availability_balanced_accuracy": 1.0,
+      "occlusion_balanced_accuracy": 1.0,
+      "occlusion_feature_ablation": {
+        "all_observable_features": 1.0,
+        "without_point_count": 0.5110714285714286,
+        "lidar_shape_only": 0.51
+      },
+      "availability_confusion": {
+        "both": {
+          "both": 1400,
+          "lidar_only": 0,
+          "pressure_only": 0
+        },
+        "lidar_only": {
+          "both": 0,
+          "lidar_only": 1400,
+          "pressure_only": 0
+        },
+        "pressure_only": {
+          "both": 0,
+          "lidar_only": 0,
+          "pressure_only": 700
+        }
+      },
+      "occlusion_confusion": {
+        "clear": {
+          "clear": 1400,
+          "occluded": 0
+        },
+        "occluded": {
+          "clear": 0,
+          "occluded": 1400
+        }
+      },
+      "occlusion_ablation_confusions": {
+        "all_observable_features": {
+          "clear": {
+            "clear": 1400,
+            "occluded": 0
+          },
+          "occluded": {
+            "clear": 0,
+            "occluded": 1400
+          }
+        },
+        "without_point_count": {
+          "clear": {
+            "clear": 634,
+            "occluded": 766
+          },
+          "occluded": {
+            "clear": 603,
+            "occluded": 797
+          }
+        },
+        "lidar_shape_only": {
+          "clear": {
+            "clear": 630,
+            "occluded": 770
+          },
+          "occluded": {
+            "clear": 602,
+            "occluded": 798
+          }
+        }
+      }
+    }
+  ],
+  "summary": {
+    "availability_balanced_accuracy": {
+      "mean": 1.0,
+      "std": 0.0
+    },
+    "occlusion_balanced_accuracy": {
+      "mean": 1.0,
+      "std": 0.0
+    },
+    "occlusion_feature_ablation": {
+      "all_observable_features": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "without_point_count": {
+        "mean": 0.5150714285714285,
+        "std": 0.025506851820558327
+      },
+      "lidar_shape_only": {
+        "mean": 0.5155,
+        "std": 0.026552076286084324
+      }
+    }
+  },
+  "limitations": [
+    "Simulator targets are not evidence of real-world condition identifiability.",
+    "This pilot covers modality availability and random point-drop occlusion only.",
+    "Installation geometry and ceiling-view effects are not modeled.",
+    "The classifier is a deterministic nearest-centroid baseline, not P1 end-to-end.",
+    "The recorded pilot environment uses Python 3.14, outside the versions listed in project classifiers."
+  ]
+}
