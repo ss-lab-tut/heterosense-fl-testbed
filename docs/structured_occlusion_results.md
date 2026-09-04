@@ -17,6 +17,11 @@ The operation is deterministic and consumes no random numbers. An empty
 is unchanged. The legacy random point-drop parameter remains available for
 backward compatibility and direct comparison.
 
+The complete default dataset was serialized canonically before and after this
+change. Both versions produced SHA-256
+`7bc79a742f6535917a15add1d148aeaf14a764c036e5ae196727cc753287cf57` in
+the same environment, confirming exact default-path compatibility.
+
 ## Research question
 
 Can the observable statistics identify meaningful observation degradation when
