@@ -30,6 +30,11 @@ from heterosense._core._observation_model import ModalityBundle
 from heterosense.client_factory import ClientFactory
 from heterosense.dataset_builder import DatasetBuilder
 from heterosense.temporal_window_sampler import TemporalWindowSampler
+from heterosense.observation_statistics import (
+    FEATURE_NAMES,
+    ObservationBaseline,
+    ObservationStatisticsExtractor,
+)
 from heterosense.validation import run_validation
 
 __all__ = [
@@ -37,6 +42,9 @@ __all__ = [
     "ConfigurationManager",
     "DatasetBuilder",
     "TemporalWindowSampler",
+    "FEATURE_NAMES",
+    "ObservationBaseline",
+    "ObservationStatisticsExtractor",
     "ModalityBundle",
     "run_validation",
     "BehaviorModel",

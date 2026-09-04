@@ -62,10 +62,16 @@ pip install -e .
 ```python
 from heterosense import ClientFactory, ConfigurationManager as CM
 from heterosense import DatasetBuilder, TemporalWindowSampler
+from heterosense import ObservationBaseline, ObservationStatisticsExtractor
 
 # 10-client heterogeneous dataset
 clients = ClientFactory.make(10, strategy="round_robin")
 data    = DatasetBuilder(CM.from_clients(clients, n_steps=20_000).to_sim_config()).build()
+
+# Observable-only P1 inputs. Select calibration frames from the training split.
+baseline  = ObservationBaseline.fit(data["0"][:100])
+extractor = ObservationStatisticsExtractor(baseline)
+features  = extractor.transform(data["0"])  # (n_frames, 24)
 
 # Temporal window iteration
 sampler = TemporalWindowSampler(data["0"], window=3)
@@ -105,6 +111,7 @@ N=50 round-robin : Local=0.366±0.003  FedAvg=0.381±0.017  Δ=-0.015
 | `ConfigurationManager.from_clients()` | Builds `SimConfig` without manual YAML |
 | `DatasetBuilder(sc).build()` | Generates `{client_id: [ModalityBundle]}` |
 | `TemporalWindowSampler(bundles, window)` | Sliding-window encoder interface |
+| `ObservationStatisticsExtractor` | Observable-only P1/P2 condition features |
 | `run_validation(data, modalities)` | Automated integrity checks V1–V4 |
 
 ## Modality patterns
